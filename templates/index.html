@@ -486,22 +486,6 @@
             30% { transform: translateY(-10px); opacity: 1; }
         }
 
-        /* Typewriter cursor */
-        .typewriter-cursor {
-            display: inline-block;
-            color: var(--accent);
-            font-weight: bold;
-            animation: cursorBlink 0.7s step-end infinite;
-            margin-left: 1px;
-            vertical-align: baseline;
-            line-height: 1;
-        }
-
-        @keyframes cursorBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             h1 {
@@ -622,7 +606,7 @@
         }
 
         // Add message to chat
-        function addMessage(message, isUser = false, animate = false) {
+        function addMessage(message, isUser = false) {
             if (isFirstMessage && isUser) {
                 chatMessages.innerHTML = '';
                 isFirstMessage = false;
@@ -630,69 +614,23 @@
 
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-
-            const time = new Date().toLocaleTimeString('en-US', {
-                hour: 'numeric',
+            
+            const time = new Date().toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
                 minute: '2-digit',
-                hour12: true
+                hour12: true 
             });
 
-            const bubbleId = 'bubble_' + Date.now();
             messageDiv.innerHTML = `
                 <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
                 <div class="message-content">
-                    <div class="message-bubble" id="${bubbleId}"></div>
+                    <div class="message-bubble">${formatMessage(message)}</div>
                     <div class="message-time">${time}</div>
                 </div>
             `;
 
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            const bubble = document.getElementById(bubbleId);
-
-            if (!animate || isUser) {
-                bubble.innerHTML = formatMessage(message);
-                return;
-            }
-
-            // Typewriter: line by line, char by char
-            const lines = message.split('\n');
-            let lineIndex = 0;
-            let charIndex = 0;
-            let currentHTML = '';
-            const cursor = '<span class="typewriter-cursor">▍</span>';
-
-            function typeNextChar() {
-                if (lineIndex >= lines.length) {
-                    bubble.innerHTML = currentHTML;
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                    return;
-                }
-
-                const line = lines[lineIndex];
-
-                if (charIndex < line.length) {
-                    charIndex++;
-                    const visibleLines = lines.slice(0, lineIndex);
-                    const partialLine = line.slice(0, charIndex);
-                    const allText = [...visibleLines, partialLine].join('\n');
-                    bubble.innerHTML = formatMessage(allText) + cursor;
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                    const delay = line.length > 80 ? 7 : line.length > 40 ? 13 : 18;
-                    setTimeout(typeNextChar, delay);
-                } else {
-                    lineIndex++;
-                    charIndex = 0;
-                    const allText = lines.slice(0, lineIndex).join('\n');
-                    currentHTML = formatMessage(allText);
-                    bubble.innerHTML = currentHTML + cursor;
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                    setTimeout(typeNextChar, 55);
-                }
-            }
-
-            typeNextChar();
         }
 
         // Show typing indicator
@@ -750,7 +688,7 @@
                 
                 // Add bot response
                 setTimeout(() => {
-                    addMessage(data.response, false, true);
+                    addMessage(data.response, false);
                 }, 300);
 
             } catch (error) {
