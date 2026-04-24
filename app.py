@@ -77,38 +77,73 @@ def _history() -> list:
     return session["history"]
 
 
-# ── File-based logging ────────────────────────────────────────────────────────
-# Every chat turn is appended to a per-session .txt log file on disk.
-# Logs survive server restarts and are readable by humans and scripts.
+# ── JSONBin.io persistent logging ─────────────────────────────────────────────
+import urllib.request
 
-# On Render (and most cloud platforms), the app directory is read-only.
-# Use /tmp for writable runtime logs, or a custom path via env var.
-_default_logs = os.path.join("/tmp", "csitmitra_logs")
-LOGS_DIR = os.environ.get("LOGS_DIR", _default_logs)
-os.makedirs(LOGS_DIR, exist_ok=True)
+JSONBIN_API_KEY = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_BIN_ID  = os.environ.get("JSONBIN_BIN_ID", "")
+ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD", "csitmitra@admin")
 
 
-def _session_log_path() -> str:
-    """Return (and cache) a unique log file path for this browser session."""
-    if "log_file" not in session:
-        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        uid = secrets.token_hex(4)
-        fname = f"chat_{ts}_{uid}.txt"
-        log_path = os.path.join(LOGS_DIR, fname)
-        session["log_file"] = log_path
-        session["log_file_name"] = fname
-        session.modified = True
-        # Write header when file is first created
-        with open(log_path, "w", encoding="utf-8") as fh:
-            fh.write("=" * 60 + "\n")
-            fh.write("  GGU CSITmitra — Chat Log\n")
-            fh.write(f"  Session started : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            fh.write("=" * 60 + "\n\n")
-    return session["log_file"]
+def _jsonbin_headers(with_content=False):
+    h = {"X-Master-Key": JSONBIN_API_KEY, "X-Bin-Versioning": "false"}
+    if with_content:
+        h["Content-Type"] = "application/json"
+    return h
+
+
+def _read_bin() -> list:
+    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
+        return []
+    try:
+        url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
+        req = urllib.request.Request(url, headers=_jsonbin_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            return data.get("record", {}).get("logs", [])
+    except Exception as e:
+        app.logger.warning(f"JSONBin read failed: {e}")
+        return []
+
+
+def _write_bin(logs: list):
+    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
+        return
+    try:
+        payload = json.dumps({"logs": logs}).encode("utf-8")
+        req = urllib.request.Request(
+            f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}",
+            data=payload, headers=_jsonbin_headers(with_content=True), method="PUT"
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        app.logger.warning(f"JSONBin write failed: {e}")
+
+
+def _create_bin():
+    try:
+        payload = json.dumps({"logs": []}).encode("utf-8")
+        headers = _jsonbin_headers(with_content=True)
+        headers["X-Bin-Name"] = "csitmitra-logs"
+        headers["X-Bin-Private"] = "true"
+        req = urllib.request.Request("https://api.jsonbin.io/v3/b", data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read())["metadata"]["id"]
+    except Exception as e:
+        app.logger.warning(f"JSONBin create failed: {e}")
+        return ""
+
+
+def _ensure_bin():
+    global JSONBIN_BIN_ID
+    if JSONBIN_API_KEY and not JSONBIN_BIN_ID:
+        JSONBIN_BIN_ID = _create_bin()
+        if JSONBIN_BIN_ID:
+            app.logger.info(f"JSONBin bin created: {JSONBIN_BIN_ID} — save this as JSONBIN_BIN_ID env var!")
 
 
 def _log(user_msg: str, intent: str, bot_reply: str):
-    """Append one turn to session cookie history AND to the disk log file."""
+    """Append one turn to session cookie history AND to JSONBin."""
     ts = datetime.datetime.now()
     turn_num = len(_history()) + 1
 
@@ -124,17 +159,46 @@ def _log(user_msg: str, intent: str, bot_reply: str):
     session["history"] = h
     session.modified = True
 
-    # Disk log (persistent, full text, survives restarts)
+    # JSONBin persistent log
     try:
-        log_path = _session_log_path()
-        with open(log_path, "a", encoding="utf-8") as fh:
-            fh.write(f"[{turn_num:03d}] {ts.strftime('%H:%M:%S')}\n")
-            fh.write(f"  User   : {user_msg}\n")
-            fh.write(f"  Intent : {intent}\n")
-            fh.write(f"  Bot    : {bot_reply}\n")
-            fh.write("\n")
+        _ensure_bin()
+        if not JSONBIN_API_KEY:
+            return
+
+        session_id = session.get("log_file_name")
+        if not session_id:
+            sid_ts = ts.strftime("%Y%m%d_%H%M%S")
+            sid_uid = secrets.token_hex(4)
+            session_id = f"chat_{sid_ts}_{sid_uid}"
+            session["log_file_name"] = session_id
+            session.modified = True
+
+        logs = _read_bin()
+        session_entry = next((s for s in logs if s.get("session_id") == session_id), None)
+        if not session_entry:
+            session_entry = {
+                "session_id": session_id,
+                "started": ts.strftime("%Y-%m-%d %H:%M:%S"),
+                "turns": []
+            }
+            logs.append(session_entry)
+
+        session_entry["turns"].append({
+            "turn":   turn_num,
+            "time":   ts.strftime("%Y-%m-%d %H:%M:%S"),
+            "user":   user_msg,
+            "intent": intent,
+            "bot":    bot_reply[:400],
+        })
+        session_entry["last_active"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Keep only last 200 sessions to stay within JSONBin free limits
+        if len(logs) > 200:
+            logs = logs[-200:]
+
+        _write_bin(logs)
     except Exception as e:
-        app.logger.warning(f"Log write failed: {e}")
+        app.logger.warning(f"Log save failed: {e}")
 
 # ── Intent keyword map ────────────────────────────────────────────────────────
 INTENTS = {
@@ -754,90 +818,146 @@ def reset():
     return jsonify({"status": "Session reset successfully."})
 
 
-@app.route("/logs", methods=["GET"])
+@app.route("/logs", methods=["GET", "POST"])
 def list_logs():
-    """Admin page — lists all saved log files with download links."""
-    try:
-        files = sorted(
-            [f for f in os.listdir(LOGS_DIR) if f.endswith(".txt")],
-            reverse=True
+    """Password-protected admin page — shows all chat sessions from JSONBin."""
+
+    # ── Auth check ────────────────────────────────────────────────────────────
+    if request.method == "POST":
+        if request.form.get("password") == ADMIN_PASSWORD:
+            session["admin_auth"] = True
+            session.modified = True
+        else:
+            return _login_page(error="Wrong password. Try again.")
+
+    if not session.get("admin_auth"):
+        return _login_page()
+
+    # ── Show logs ─────────────────────────────────────────────────────────────
+    if not JSONBIN_API_KEY:
+        return _admin_html("<p style='color:#f88'>⚠️ JSONBIN_API_KEY not set. Add it in Render environment variables.</p>", 0)
+
+    logs = _read_bin()
+    logs_sorted = sorted(logs, key=lambda x: x.get("last_active", ""), reverse=True)
+
+    rows = ""
+    for s in logs_sorted:
+        sid   = s.get("session_id", "?")
+        start = s.get("started", "?")
+        last  = s.get("last_active", "?")
+        turns = len(s.get("turns", []))
+        rows += (
+            f"<tr>"
+            f"<td>{sid}</td>"
+            f"<td>{start}</td>"
+            f"<td>{last}</td>"
+            f"<td>{turns}</td>"
+            f"<td><a href='/logs/view/{sid}'>View</a></td>"
+            f"</tr>\n"
         )
-        rows = ""
-        for fname in files:
-            fpath = os.path.join(LOGS_DIR, fname)
-            size_kb = os.path.getsize(fpath) / 1024
-            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M:%S")
-            rows += (
-                f"<tr>"
-                f"<td>{fname}</td>"
-                f"<td>{mtime}</td>"
-                f"<td>{size_kb:.1f} KB</td>"
-                f"<td><a href='/logs/view/{fname}'>View</a> &nbsp; "
-                f"<a href='/logs/download/{fname}'>Download</a></td>"
-                f"</tr>\n"
-            )
-        html = f"""<!DOCTYPE html>
+
+    table = (
+        "<table><tr><th>Session ID</th><th>Started</th><th>Last Active</th><th>Turns</th><th>Action</th></tr>"
+        + rows + "</table>"
+    ) if logs_sorted else "<p style='color:#888'>No logs yet. Chats will appear here once JSONBIN_API_KEY is set.</p>"
+
+    return _admin_html(table, len(logs_sorted))
+
+
+@app.route("/logs/view/<path:session_id>", methods=["GET"])
+def view_log(session_id):
+    """View a specific chat session."""
+    if not session.get("admin_auth"):
+        return _login_page()
+    if not JSONBIN_API_KEY:
+        return "JSONBIN_API_KEY not configured", 500
+
+    logs = _read_bin()
+    entry = next((s for s in logs if s.get("session_id") == session_id), None)
+    if not entry:
+        return "Session not found", 404
+
+    turns_html = ""
+    for t in entry.get("turns", []):
+        turns_html += f"""
+        <div class='turn'>
+          <div class='meta'>Turn {t['turn']} &nbsp;·&nbsp; {t['time']} &nbsp;·&nbsp; intent: <b>{t['intent']}</b></div>
+          <div class='user'>👤 {t['user']}</div>
+          <div class='bot'>🤖 {t['bot']}</div>
+        </div>"""
+
+    html = f"""<!DOCTYPE html>
+<html><head><title>{session_id}</title>
+<style>
+  body {{ font-family: monospace; padding: 2rem; background:#1a1a2e; color:#eee; max-width:900px; margin:auto; }}
+  a {{ color:#00d4ff; }} h2 {{ color:#00d4ff; }}
+  .turn {{ background:#0f3460; border-radius:8px; padding:1rem; margin-bottom:1rem; }}
+  .meta {{ color:#888; font-size:.85em; margin-bottom:.5rem; }}
+  .user {{ color:#7ecfff; margin-bottom:.4rem; }}
+  .bot {{ color:#b8f0b8; white-space:pre-wrap; word-break:break-word; }}
+</style></head><body>
+<a href="/logs">← Back to logs</a>
+<h2>Session: {session_id}</h2>
+<p>Started: {entry.get('started')} &nbsp;|&nbsp; Last active: {entry.get('last_active')} &nbsp;|&nbsp; {len(entry.get('turns',[]))} turns</p>
+{turns_html if turns_html else "<p style='color:#888'>No turns recorded.</p>"}
+</body></html>"""
+    return html
+
+
+@app.route("/logs/logout", methods=["GET"])
+def logs_logout():
+    session.pop("admin_auth", None)
+    return _login_page(error="Logged out.")
+
+
+def _login_page(error=""):
+    err_html = f"<p style='color:#f88'>{error}</p>" if error else ""
+    return f"""<!DOCTYPE html>
+<html><head><title>CSITmitra Admin Login</title>
+<style>
+  body {{ font-family: sans-serif; background:#1a1a2e; color:#eee; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
+  .box {{ background:#0f3460; padding:2rem 2.5rem; border-radius:12px; min-width:320px; text-align:center; }}
+  h2 {{ color:#00d4ff; margin-bottom:1rem; }}
+  input {{ width:100%; padding:.6rem; border-radius:6px; border:1px solid #444; background:#1a1a2e; color:#eee; font-size:1rem; margin-bottom:1rem; box-sizing:border-box; }}
+  button {{ width:100%; padding:.7rem; background:#00d4ff; color:#000; border:none; border-radius:6px; font-size:1rem; font-weight:bold; cursor:pointer; }}
+  button:hover {{ background:#00b8d9; }}
+</style></head><body>
+<div class='box'>
+  <h2>🔒 CSITmitra Admin</h2>
+  {err_html}
+  <form method='POST' action='/logs'>
+    <input type='password' name='password' placeholder='Enter admin password' autofocus>
+    <button type='submit'>Login</button>
+  </form>
+</div>
+</body></html>"""
+
+
+def _admin_html(content: str, count: int):
+    return f"""<!DOCTYPE html>
 <html><head><title>CSITmitra — Chat Logs</title>
 <style>
   body {{ font-family: monospace; padding: 2rem; background:#1a1a2e; color:#eee; }}
   h1 {{ color:#00d4ff; }} table {{ border-collapse:collapse; width:100%; }}
   th,td {{ padding:.5rem 1rem; border:1px solid #444; text-align:left; }}
   th {{ background:#0f3460; }} a {{ color:#00d4ff; }}
-  .empty {{ color:#888; margin-top:2rem; }}
+  .logout {{ float:right; font-size:.85em; }}
 </style></head><body>
-<h1>📋 CSITmitra — Chat Logs</h1>
-<p>{len(files)} log file(s) saved in <code>logs/</code></p>
-{"<table><tr><th>File</th><th>Last Modified</th><th>Size</th><th>Actions</th></tr>" + rows + "</table>" if files else "<p class='empty'>No logs yet. Chats will appear here.</p>"}
+<h1>📋 CSITmitra — Chat Logs <span class='logout'><a href='/logs/logout'>Logout</a></span></h1>
+<p>{count} session(s) stored in JSONBin.</p>
+{content}
 </body></html>"""
-        return html
-    except Exception as e:
-        return f"Error listing logs: {e}", 500
-
-
-@app.route("/logs/view/<path:filename>", methods=["GET"])
-def view_log(filename):
-    """View a log file in the browser."""
-    if ".." in filename or "/" in filename:
-        return "Invalid filename", 400
-    fpath = os.path.join(LOGS_DIR, filename)
-    if not os.path.exists(fpath):
-        return "Log file not found", 404
-    with open(fpath, "r", encoding="utf-8") as f:
-        content = f.read()
-    html = f"""<!DOCTYPE html>
-<html><head><title>{filename}</title>
-<style>
-  body {{ font-family: monospace; padding: 2rem; background:#1a1a2e; color:#eee; }}
-  pre {{ white-space:pre-wrap; word-break:break-word; background:#0f3460; padding:1rem; border-radius:8px; }}
-  a {{ color:#00d4ff; }}
-</style></head><body>
-<a href="/logs">← Back to logs</a> &nbsp; <a href="/logs/download/{filename}">⬇ Download</a>
-<h2>{filename}</h2>
-<pre>{content}</pre>
-</body></html>"""
-    return html
-
-
-@app.route("/logs/download/<path:filename>", methods=["GET"])
-def download_log(filename):
-    """Download a log file as a .txt attachment."""
-    from flask import send_from_directory
-    if ".." in filename or "/" in filename:
-        return "Invalid filename", 400
-    return send_from_directory(LOGS_DIR, filename, as_attachment=True)
 
 
 @app.route("/health", methods=["GET"])
 def health():
-    log_count = len([f for f in os.listdir(LOGS_DIR) if f.endswith(".txt")]) if os.path.exists(LOGS_DIR) else 0
     return jsonify({
         "status": "ok",
         "nltk": _USE_NLTK,
         "data_loaded": bool(DATA),
         "courses": len(DATA.get("courses", {})),
         "faculty": len(DATA.get("faculty", [])),
-        "logs_saved": log_count,
-        "logs_dir": LOGS_DIR,
+        "jsonbin_configured": bool(JSONBIN_API_KEY and JSONBIN_BIN_ID),
     })
 
 
