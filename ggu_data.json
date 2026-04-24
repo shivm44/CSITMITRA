@@ -1,0 +1,521 @@
+{
+  "university": "Guru Ghasidas Vishwavidyalaya (GGV)",
+  "department": "Department of Computer Science & Information Technology (CSIT)",
+  "location": "Koni, Bilaspur, Chhattisgarh — 495009",
+  "established": "1983 (State University); Central University since 2009",
+  "naac": "A++ (NAAC Accredited)",
+  "website": "www.ggu.ac.in/department/csit",
+  "phone": "07752-260209 (Registrar) | 07752-260283",
+  "email": "centralggu@ggu.ac.in",
+  "campus_size": "665 acres",
+  "courses": {
+    "BCA (Bachelor of Computer Applications)": {
+      "duration": "4 years (8 semesters)",
+      "intake": "60 seats",
+      "eligibility": "10+2 with Mathematics / Science stream. Admission via CUET UG or Direct Admission.",
+      "fee_per_semester": "Approx. ₹32,000 per semester",
+      "total_approx_fee": "Approx. ₹2,50,000 for full programme",
+      "semesters": {
+        "Semester 1": [
+          "Programming Fundamentals- Theory and Lab",
+          "Cyber Education and Awareness",
+          "Programming in C- Theory and Lab",
+          "Machine Learning for Beginners",
+          "Office Automation"
+        ],
+        "Semester 2": [
+          "Data Structures using C++- Theory and Lab",
+          "Computing Essentials - Theory and Lab",
+          "Basics of AI",
+          "Fundamentals of Programming using C",
+          "Digital Awareness"
+        ],
+        "Semester 3": [
+          "Database Management Systems- Theory and Lab",
+          "principles of Operating Systems",
+          "Programming With Python- Theory and Lab",
+          "Data Science",
+          "Project Work II(Industrial training for 2 weeks)"
+        ],
+        "Semester 4": [
+          "Object Oriented Programming using Java- Theory and Lab",
+          "Discrete Structures",
+          "Web Application Development- Theory and Lab",
+          "Understanding Data Patterns - Theory and Lab"
+        ],
+        "Semester 5": [
+          "Advance Java Programming- Theory and Lab",
+          "Computer Graphics Using Python- Theory and Lab",
+          "IT Tools and Applications- Theory and Lab",
+          "Analysis and Design of Algorithms",
+          "Data Mining and Knowledge Discovery",
+          "Intro to Data Warehousing and Data Mining- Theory and Lab"
+        ],
+        "Semester 6": [
+          "AI and Machine Learning- Theory and Lab",
+          "Data Communication and Computer Networks",
+          "Principles of Animation- Theory and Lab",
+          "Theory of Computation",
+          "Modelling and Simulation"
+        ],
+        "Semester 7": [
+          "Soft Computing",
+          "Research Methodology",
+          "Augmented Reality and Virtual Reality",
+          "Seminar/Colloquium/Minor Project"
+        ],
+        "Semester 8": [
+          "Digital Image Processing and Computer Vision",
+          "Major Research Project"
+        ]
+      }
+    },
+    "M.Sc. (Computer Science)": {
+      "duration": "2 years (4 semesters)",
+      "intake": "30 seats",
+      "eligibility": "B.Sc. / BCA / B.Tech in CS or related field. Admission via CUET PG.",
+      "fee_per_semester": "Approx. ₹12,000 per semester",
+      "total_approx_fee": "Approx. ₹48,000 for full programme",
+      "semesters": {
+        "Semester 1": [
+          "Design of Operating System",
+          "Artificial Intelligence",
+          "Relational Database Management Systems- Theory and Lab",
+          "Programming in C/C++",
+          "Soft Computing"
+        ],
+        "Semester 2": [
+          "Design & Analysis of Algorithms",
+          "Machine Learning",
+          "Neural Networks and Deep Learning",
+          "Web Technology- Theory and Lab",
+          "Research Methodology"
+        ],
+        "Semester 3": [
+          "Computer Graphics and Multimedia",
+          "Compiler Design",
+          "Data Mining and Data Warehousing- Theory and Lab",
+          "Advance Programming in Java",
+          "Network Security"
+        ],
+        "Semester 4": [
+          "Dissertation / Major Project"
+        ]
+      }
+    },
+    "MCA (Master of Computer Applications)": {
+      "duration": "2 years (4 semesters)",
+      "intake": "75 seats (AICTE approved)",
+      "eligibility": "Graduation in any stream with Mathematics at 10+2 or graduation level. Admission via CUET PG.",
+      "fee_per_semester": "Approx. ₹15,000 – ₹16,000 per semester",
+      "total_approx_fee": "Approx. ₹55,000 – ₹60,000 for full programme",
+      "semesters": {
+        "Semester 1": [
+          "Artificial Intelligence",
+          "Advance JAVA",
+          "Computer Networks",
+          "Database Management Systems",
+          "Probability & Statistics",
+          "Operating Systems"
+        ],
+        "Semester 2": [
+          "Neural Networks and Deep Learning",
+          "Cloud Computing",
+          "Optimization Techniques",
+          "Pattern Recognition",
+          "Design & Analysis of Algorithms",
+          "Image Processing",
+          "Software Engineering",
+          "Minor Project"
+        ],
+        "Semester 3": [
+          "Machine Learning",
+          "Computer Graphics and Multimedia",
+          "Data Mining and Data Warehousing",
+          "Big Data Analytics",
+          "Compiler Design",
+          "Data science using Python",
+          "Advanced Operating Systems",
+          "Minor Project"
+        ],
+        "Semester 4": [
+          "Major Project"
+        ]
+      }
+    },
+    "Ph.D. (Computer Science / IT)": {
+      "duration": "Minimum 3 years",
+      "intake": "As per supervisor availability",
+      "eligibility": "M.Sc. CS/IT / MCA / M.Tech with minimum 55% marks. Admission via VRET (university entrance test). UGC-NET / GATE / JRF holders may be exempted from VRET.",
+      "fee_per_semester": "Approx. ₹12,000 – ₹13,000 per semester (varies)",
+      "research_areas": [
+        "Machine Learning",
+        "Deep Learning",
+        "Soft Computing",
+        "Natural Language Processing",
+        "Image Processing",
+        "Network Security",
+        "IoT",
+        "Big Data",
+        "Computer Vision"
+      ],
+      "fellowship": "JRF/SRF fellowships available for eligible NET/GATE qualified students."
+    },
+    "B.Sc. (Computer Science)": {
+      "duration": "3 years (6 semesters)/4 years (8 semesters) with exit option after 6 semesters",
+      "intake": "75 seats",
+      "eligibility": "10+2 with Mathematics / Science stream. Admission via CUET UG.",
+      "fee_per_semester": "Approx. ₹4,500 - ₹5,500 per semester (government subsidised)",
+      "total_approx_fee": "Approx. ₹30,000 for full 3-year programme",
+      "semesters": {
+        "Semester 1": [
+          "Digital Electronics",
+          "Basic of Programming- Theory and Lab",
+          "Programming in C- Theory and Lab",
+          "Fundamental ICT",
+          "Office Automation",
+          "Cyber Education and Awareness",
+          "Machine Learning for Beginners"
+        ],
+        "Semester 2": [
+          "Data Structures and Algorithms- Theory and Lab",
+          "Digital Literacy- Theory and Lab",
+          "Basics of AI",
+          "Fundamentals of Programming using C",
+          "Digital Awareness"
+        ],
+        "Semester 3": [
+          "Operating Systems",
+          "Relational Database Management Systems - Theory and Lab",
+          "Programming With Python- Theory and Lab",
+          "Data Science"
+        ],
+        "Semester 4": [
+          "Object Oriented Programming using Java- Theory and Lab",
+          "Computer Networks II",
+          "Discrete Structures",
+          "Web Application Design- Theory and Lab",
+          "Data Analysis and Visualization- Theory and Lab"
+        ],
+        "Semester 5": [
+          "Advance Java Programming- Theory and Lab",
+          "Computer Graphics Using Python- Theory and Lab",
+          "Algorithm Design and Analysis",
+          "Data Mining and Knowledge Discovery",
+          "Intro to Data Warehousing and Data Mining- Theory and Lab",
+          "Open Source and Application Software- Theory and Lab"
+        ],
+        "Semester 6 (Exit UG)": [
+          "AI and Machine Learning- Theory and Lab",
+          "Data Communication and Computer Networks",
+          "Vocatinal(To be Offered by Other Department)",
+          "Theory of Computation",
+          "Modelling and Simulation",
+          "Basic of Animation- Theory and Lab"
+        ],
+        "Semester 7": [
+          "Quantum Computing",
+          "Big Data and Analytics",
+          "Multimedia and Animation",
+          "Information and Network Security",
+          "Information retrieval and Web Mining",
+          "Internet of Things (IoT)"
+        ],
+        "Semester 8": [
+          "Microsoft .Net Technologies",
+          "Blockchain Technology",
+          "Augmented Reality and Virtual Reality",
+          "Digital Image Processing",
+          "Cloud Computing",
+          "Computational Thinking",
+          "Prompt Engineering"
+        ]
+      }
+    }
+  },
+  "fees": {
+    "hostel": {
+      "boys": "Approx. ₹5,000 – ₹6,000 per semester (room + mess)",
+      "girls": "Approx. ₹5,000 – ₹6,000 per semester (room + mess)",
+      "note": "Hostel allocation is subject to seat availability. Apply separately via SAMARTH Portal."
+    },
+    "other_charges": {
+      "library_fee": "Included in semester fee",
+      "sports_fee": "Included in semester fee",
+      "exam_fee": "included in semester fee",
+      "lab_fee": "Included in semester fee",
+      "bus_fee": "Included in semester fee",
+      "medical_fee": "Included in semester fee",
+      "cultural_fee": "Included in semester fee",
+      "internet_fee": "Included in semester fee"
+    },
+    "scholarships_that_cover_fees": [
+      "NSP (National Scholarship Portal) — covers full/partial tuition for SC/ST/OBC/EWS",
+      "Post-Matric Scholarship — State Government of Chhattisgarh",
+      "Central Sector Scholarship — for meritorious students",
+      "Sudama Scholarship — for economically weaker students in Chhattisgarh",
+      "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver)"
+    ],
+    "note": "GGV is a Central University. Fees are heavily subsidised compared to private institutions. Exact fees may be revised each session — always verify at www.ggu.ac.in."
+  },
+  "faculty": [
+    {
+      "name": "Dr. Babita Majhi",
+      "designation": "Associate Professor",
+      "qualification": "Ph.D. in Computer Science",
+      "email": "babita.majhi@gmail.com",
+      "phone": "9098715203",
+      "specialization": "Signal Processing, Soft Computing, Neural Networks, Evolutionary Algorithms",
+      "subjects_taught": [
+        "Artificial Intelligence",
+        "Soft Computing",
+        "Neural Networks",
+        "Research Methodology"
+      ],
+      "notable": "Widely published in international journals. Active research collaborations with national institutions.",
+      "google_scholar": "Available on Google Scholar (search: Babita Majhi GGV)"
+    },
+    {
+      "name": "Dr. Santosh Kumar Majhi",
+      "designation": "Associate Professor",
+      "qualification": "Ph.D. in Computer Science",
+      "email": "smajhi.csit@ggu.ac.in",
+      "phone": "9438403651",
+      "specialization": "Soft Computing, Machine Learning, Pattern Recognition, Nature-Inspired Algorithms",
+      "subjects_taught": [
+        "Machine Learning",
+        "Pattern Recognition",
+        "Soft Computing",
+        "Data Mining"
+      ],
+      "notable": "Google Scholar citations: 1,339+. ORCID: 0000-0002-8887-6933. Joined GGV in November 2023.",
+      "google_scholar": "scholar.google.co.in — search: Santosh Kumar Majhi"
+    },
+    {
+      "name": "Dr. Pushplata Pujari",
+      "designation": "Head of Department (HoD) & Professor",
+      "qualification": "Ph.D. in Computer Science",
+      "email": "csit.ppujari@ggu.ac.in",
+      "phone": "N/A (contact via dept.)",
+      "specialization": "Machine Learning, Deep Learning, Image Processing, Plant Recognition using CNN",
+      "subjects_taught": [
+        "Machine Learning",
+        "Deep Learning",
+        "Image Processing",
+        "Python Programming"
+      ],
+      "notable": "Published research on CNN-based plant recognition (VGG16, ResNet101). Work on oil spill classification using Random Forest and XGBoost."
+    },
+    {
+      "name": "Dr. Rajwant Singh Rao",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.",
+      "email": "rajwantrao@gmail.com",
+      "phone": "8827572070",
+      "specialization": "Computer Networks, Information Security, Cryptography",
+      "subjects_taught": [
+        "Computer Networks",
+        "Network Security",
+        "Cryptography",
+        "Operating Systems"
+      ],
+      "notable": "Joined CSIT dept. in December 2019."
+    },
+    {
+      "name": "Dr. Amitesh Kumar Jha",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.",
+      "email": "amitesh2911@yahoo.co.in",
+      "phone": "09827930291",
+      "specialization": "Database Systems, Data Mining, Information Retrieval",
+      "subjects_taught": [
+        "Database Management Systems",
+        "Data Mining",
+        "Data Warehousing",
+        "SQL & NoSQL"
+      ],
+      "notable": "Active in departmental academic activities and curriculum development."
+    },
+    {
+      "name": "Dr. Sushma Jaiswal",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.",
+      "email": "jaiswal1302@gmail.com",
+      "phone": "9993781013",
+      "specialization": "Natural Language Processing, Data Mining, Text Analytics",
+      "subjects_taught": [
+        "Natural Language Processing",
+        "Data Mining",
+        "Web Technologies",
+        "Algorithms"
+      ],
+      "notable": "Research focused on NLP applications and text classification."
+    },
+    {
+      "name": "Dr. Akhilesh Kumar Shrivas",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.; M.Tech (CSE) — JNTU Hyderabad",
+      "email": "proffshrivas@gmail.com",
+      "phone": "9098174759",
+      "specialization": "Machine Learning, Feature Selection, Data Science, High-Dimensional Data",
+      "subjects_taught": [
+        "Machine Learning",
+        "Data Science",
+        "Programming in C",
+        "Design & Analysis of Algorithms"
+      ],
+      "notable": "Scopus Author ID: 57211027423. Google Scholar citations: 723+. Joined December 2019.",
+      "google_scholar": "scholar.google.com — search: Akhilesh Kumar Shrivas"
+    },
+    {
+      "name": "Dr. Vikas Kumar Pandey",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.",
+      "email": "vikaspandeymmyvv@gmail.com",
+      "phone": "9303338726",
+      "specialization": "Computer Vision, Deep Learning, Feature Extraction",
+      "subjects_taught": [
+        "Computer Vision",
+        "Deep Learning",
+        "Digital Image Processing",
+        "Python"
+      ],
+      "notable": "Published a patent (No. 202421079026A) on feature selection in high-dimensional datasets (2024). Filed Oct 2024, Published Nov 2024.",
+      "orcid": "0000-0000-5612-7586"
+    },
+    {
+      "name": "Dr. Vineet Kumar Awasthi",
+      "designation": "Assistant Professor",
+      "qualification": "Ph.D.",
+      "email": "proffvineet@gmail.com",
+      "phone": "9926709807",
+      "specialization": "Cloud Computing, Network Security, Distributed Systems",
+      "subjects_taught": [
+        "Cloud Computing",
+        "Network Security",
+        "Distributed Systems",
+        "Computer Networks"
+      ],
+      "notable": "Research in cloud architecture and security frameworks."
+    },
+    {
+      "name": "Mr. Prashant Vaishnav",
+      "designation": "Assistant Professor",
+      "qualification": "M.Tech (CSE) — JNTU Hyderabad",
+      "email": "prashanth.vaishnav@gmail.com",
+      "phone": "9131922305",
+      "specialization": "Deep Learning, Plant Disease Detection, Convolutional Neural Networks",
+      "subjects_taught": [
+        "Deep Learning",
+        "Machine Learning",
+        "C Programming",
+        "Data Structures"
+      ],
+      "notable": "Patent filed (2024): 'A Feature Selection System with Incremental Feature Clustering in High Dimensional Dataset' — Patent No. 202421079026A. Published in IJCA Vol. 187, 2025.",
+      "joined": "December 2019"
+    },
+    {
+      "name": "Mr. Vivek Kumar Sarthe",
+      "designation": "Assistant Professor",
+      "qualification": "M.Tech",
+      "email": "vivek.sarathe@ggu.ac.in",
+      "phone": "7773050900",
+      "specialization": "Algorithms, Theory of Computation, Programming",
+      "subjects_taught": [
+        "Design & Analysis of Algorithms",
+        "Theory of Computation",
+        "C++ Programming",
+        "Discrete Mathematics"
+      ],
+      "notable": "Scopus Author ID: 57211027423. Google Scholar citations: 3,464+. ORCID: 0000-0001-7620-8674.",
+      "joined": "December 2019"
+    },
+    {
+      "name": "Mr. Abhishek Patel",
+      "designation": "Assistant Professor",
+      "qualification": "M.Tech",
+      "email": "patel.abhishek@ggu.ac.in",
+      "phone": "7587238307",
+      "specialization": "Software Engineering, Web Technologies, Full Stack Development",
+      "subjects_taught": [
+        "Software Engineering",
+        "Web Technologies",
+        "Java Programming",
+        "Mobile App Development"
+      ],
+      "notable": "Actively involved in industry-linked project mentoring for students."
+    }
+  ],
+  "facilities": [
+    "Departmental computer lab with branded PCs (latest configuration) — students get dedicated hands-on time",
+    "Departmental library — CS/IT books, journals, and reference material",
+    "Central (Nalanda) Library — 1.44+ lakh volumes, 418 printed journals, 8,156+ online journals, 24-hr access during exams",
+    "High-speed internet and Wi-Fi across the entire campus",
+    "Separate Boys hostels (3) and Girls hostels (3) on campus",
+    "800-seat University Auditorium for seminars, convocations and cultural events",
+    "Sports complex — cricket ground, football field, basketball, volleyball, badminton, swimming pool, gymnasium, skating rink",
+    "University Health Centre — Medical Officer + visiting CIMS specialists",
+    "University bus service between Bilaspur city and Koni campus",
+    "Innovation & Research Lab (shared across departments)"
+  ],
+  "placement": {
+    "ug_4yr_median": "₹4.50 LPA (NIRF 2025 data)",
+    "pg_2yr_median": "₹4.00 LPA (NIRF 2025 data)",
+    "highest": "Up to ₹64 LPA (technical streams)",
+    "students_placed_ug": "573 UG students placed (NIRF 2025)",
+    "students_placed_pg": "147 PG students placed (NIRF 2025)",
+    "placement_rate": "80–90% for technical programmes",
+    "top_recruiters": [
+      "TCS",
+      "Infosys",
+      "Wipro",
+      "Microsoft",
+      "Amazon",
+      "Deloitte",
+      "HCL",
+      "Cognizant",
+      "Tech Mahindra"
+    ],
+    "placement_cell": "GGV has a dedicated Placement Cell that handles campus drives, career counselling, and industry tie-ups.",
+    "note": "CSIT graduates are placed in software development, data science, IT consulting, and research roles."
+  },
+  "scholarship": [
+    "NSP (National Scholarship Portal) — covers full/partial tuition for SC/ST/OBC/EWS students",
+    "Post-Matric Scholarship — Chhattisgarh State Government",
+    "Central Sector Scholarship — for meritorious students (top 20% in board exams)",
+    "Merit-based fee waiver by the university for top-performing students",
+    "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver) — apply through SAMARTH Portal",
+    "Post-Matric Scholarship — State Government of Chhattisgarh",
+    "Sudama Scholarship — for economically weaker students in Chhattisgarh",
+    "JRF/SRF Fellowships for Ph.D. scholars with UGC-NET/GATE qualification"
+  ],
+  "research": {
+    "summary": "The CSIT department has hosted national and international conferences, including SCICT-2011 with speakers from Taiwan, Korea, Hong Kong, and leading Indian IITs. Faculty maintain active collaborations with national and international institutions.",
+    "areas": [
+      "Machine Learning",
+      "Deep Learning",
+      "Soft Computing",
+      "Natural Language Processing",
+      "Image Processing",
+      "Network Security",
+      "IoT",
+      "Big Data",
+      "Computer Vision",
+      "Signal Processing"
+    ],
+    "recent_highlights": [
+      "Patent filed 2024: Feature Selection System for High-Dimensional Datasets (Prashant Vaishnav)",
+      "Deep Learning-based plant recognition using VGG16 and ResNet101 (Dr. Pushplata Pujari)",
+      "Oil spill classification using Random Forest and XGBoost",
+      "DST Government of India funded project on IoT-based Healthcare"
+    ]
+  },
+  "exam_pattern": "GGV follows a semester system. Each semester has: 2 internal class tests + 1 mid-semester exam + 1 end-semester exam. Students can view their checked answer sheets as per Academic Council guidelines. Grading is on a 10-point CGPA scale.",
+  "admission_process": {
+    "BCA": "Apply via CUET UG → Register on SAMARTH Portal at www.ggu.ac.in → Merit-based selection.",
+    "B.Sc. CS": "Apply via CUET UG → Register on SAMARTH Portal at www.ggu.ac.in → Merit-based selection.",
+    "M.Sc. CS": "Apply via CUET PG → Register on SAMARTH Portal → Selection based on CUET PG score.",
+    "MCA": "Apply via CUET PG → Register on SAMARTH Portal → Selection based on CUET PG score.",
+    "Ph.D.": "Apply for VRET (Vishwavidyalaya Research Entrance Test) → Interview. UGC-NET/GATE/JRF holders may be exempted from VRET."
+  }
+}

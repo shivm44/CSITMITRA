@@ -1,0 +1,844 @@
+# ============================================================
+#  GGU CSITmitra — Flask Web Chatbot  (Production-Ready)
+#  Guru Ghasidas Vishwavidyalaya, Bilaspur
+#  Department of Computer Science & Information Technology
+#
+#  v3.0 — deployment-safe:
+#    - Per-user context stored in Flask server-side sessions
+#    - NLTK with graceful fallback (no crash if data missing)
+#    - gunicorn-compatible (no global mutable state per user)
+#    - ggu_data.json driven — update data without code changes
+#    - All intents: courses, faculty, fees, admission, placement,
+#      scholarship, research, exam, comparison, syllabus, hostel
+# ============================================================
+
+from flask import Flask, render_template, request, jsonify, session
+from flask_cors import CORS
+import os
+import json
+import string
+import random
+import difflib
+import datetime
+import textwrap
+import secrets
+
+# ── NLTK (graceful degradation if data unavailable) ──────────────────────────
+try:
+    import nltk
+    from nltk.tokenize import word_tokenize
+    from nltk.stem import WordNetLemmatizer
+    nltk.download("punkt",     quiet=True)
+    nltk.download("punkt_tab", quiet=True)
+    nltk.download("wordnet",   quiet=True)
+    nltk.download("omw-1.4",   quiet=True)
+    _lemmatizer = WordNetLemmatizer()
+    _test = word_tokenize("test")          # fails fast if data missing
+    _lemmatizer.lemmatize("running")
+    _USE_NLTK = True
+except Exception:
+    _USE_NLTK = False
+
+# ── Flask setup ───────────────────────────────────────────────────────────────
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+CORS(app, supports_credentials=True)
+
+# ── Load knowledge data ───────────────────────────────────────────────────────
+def load_data() -> dict:
+    data_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ggu_data.json")
+    if not os.path.exists(data_file):
+        return {}
+    with open(data_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+DATA = load_data()   # read once at startup — immutable, safe for multi-worker
+
+# ── Session context helpers ───────────────────────────────────────────────────
+# All per-user state lives in Flask's signed cookie session.
+# No global mutable dicts — safe under gunicorn with multiple workers/threads.
+
+def _ctx() -> dict:
+    """Return the current user's context dict, creating it if absent."""
+    if "ctx" not in session:
+        session["ctx"] = {"last_intent": None, "last_course": None, "last_faculty": None}
+    return session["ctx"]
+
+def _set_ctx(**kwargs):
+    ctx = _ctx()
+    ctx.update(kwargs)
+    session["ctx"] = ctx          # mark session as modified
+    session.modified = True
+
+def _history() -> list:
+    """Return in-memory history for this session (used for /history endpoint)."""
+    if "history" not in session:
+        session["history"] = []
+    return session["history"]
+
+
+# ── File-based logging ────────────────────────────────────────────────────────
+# Every chat turn is appended to a per-session .txt log file on disk.
+# Logs survive server restarts and are readable by humans and scripts.
+
+LOGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+
+def _session_log_path() -> str:
+    """Return (and cache) a unique log file path for this browser session."""
+    if "log_file" not in session:
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        uid = secrets.token_hex(4)
+        fname = f"chat_{ts}_{uid}.txt"
+        log_path = os.path.join(LOGS_DIR, fname)
+        session["log_file"] = log_path
+        session["log_file_name"] = fname
+        session.modified = True
+        # Write header when file is first created
+        with open(log_path, "w", encoding="utf-8") as fh:
+            fh.write("=" * 60 + "\n")
+            fh.write("  GGU CSITmitra — Chat Log\n")
+            fh.write(f"  Session started : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            fh.write("=" * 60 + "\n\n")
+    return session["log_file"]
+
+
+def _log(user_msg: str, intent: str, bot_reply: str):
+    """Append one turn to session cookie history AND to the disk log file."""
+    ts = datetime.datetime.now()
+    turn_num = len(_history()) + 1
+
+    # Cookie history (for /history endpoint)
+    h = _history()
+    h.append({
+        "turn":   turn_num,
+        "time":   ts.strftime("%H:%M:%S"),
+        "user":   user_msg,
+        "intent": intent,
+        "bot":    bot_reply[:400],
+    })
+    session["history"] = h
+    session.modified = True
+
+    # Disk log (persistent, full text, survives restarts)
+    try:
+        log_path = _session_log_path()
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"[{turn_num:03d}] {ts.strftime('%H:%M:%S')}\n")
+            fh.write(f"  User   : {user_msg}\n")
+            fh.write(f"  Intent : {intent}\n")
+            fh.write(f"  Bot    : {bot_reply}\n")
+            fh.write("\n")
+    except Exception as e:
+        app.logger.warning(f"Log write failed: {e}")
+
+# ── Intent keyword map ────────────────────────────────────────────────────────
+INTENTS = {
+    "greeting":    ["hi", "hello", "hey", "howdy", "greet", "morning", "afternoon", "evening", "namaste", "start"],
+    "farewell":    ["bye", "goodbye", "exit", "quit", "later", "tata", "cya", "close", "end"],
+    "thanks":      ["thanks", "thank", "appreciate", "grateful", "cheers", "helpful"],
+    "about":       ["about", "overview", "history", "established", "founded", "information",
+                    "info", "ggu", "ggv", "university", "vishwavidyalaya", "department", "csit"],
+    "courses":     ["course", "program", "programme", "degree", "branch", "stream", "study",
+                    "offer", "available", "subject", "list", "all"],
+    "mca":         ["mca", "master", "application"],
+    "bca":         ["bca", "bachelor"],
+    "msc_cs":      ["msc", "m.sc"],
+    "bsc_cs":      ["bsc", "b.sc", "undergraduate"],
+    "phd":         ["phd", "ph.d", "doctoral", "doctorate", "vret"],
+    "help":        ["help", "menu", "option", "command", "guide", "assist", "support"],
+    "compare":     ["compare", "difference", "vs", "versus", "better", "which", "choose",
+                    "prefer", "between", "best", "suit"],
+    "fees":        ["fee", "fees", "cost", "price", "tuition", "charge", "payment", "money",
+                    "rupee", "expense", "afford"],
+    "hostel":      ["hostel", "accommodation", "room", "mess", "stay", "residence", "dorm"],
+    "admission":   ["admission", "admit", "apply", "application", "enroll", "join", "entrance",
+                    "eligibility", "criteria", "requirement", "cuet", "gate", "process", "samarth"],
+    "faculty":     ["faculty", "professor", "teacher", "staff", "lecturer", "instructor",
+                    "who", "teach"],
+    "professor":   ["babita", "santosh", "pushplata", "rajwant", "sushma", "akhilesh", "vikas",
+                    "vineet", "prashant", "vivek", "abhishek", "amitesh", "majhi", "pujari",
+                    "jaiswal", "shrivas", "pandey", "awasthi", "vaishnav", "sarthe", "patel", "jha", "rao"],
+    "facilities":  ["facility", "facilities", "library", "lab", "wifi", "internet",
+                    "sport", "cafeteria", "infrastructure", "amenity", "medical", "bus", "transport", "campus"],
+    "placement":   ["placement", "job", "package", "salary", "recruit", "recruiter", "hire",
+                    "lpa", "company", "career", "placed", "opportunity"],
+    "scholarship": ["scholarship", "financial", "aid", "waiver", "merit", "stipend",
+                    "concession", "fund", "fellowship", "nsp", "free"],
+    "research":    ["research", "publication", "conference", "paper", "project", "journal",
+                    "innovation", "patent", "highlight"],
+    "exam":        ["exam", "examination", "test", "internal", "assessment",
+                    "marks", "pattern", "grade", "cgpa", "evaluation"],
+    "location":    ["location", "address", "where", "place", "city", "situated", "koni",
+                    "bilaspur", "chhattisgarh", "distance", "map"],
+    "contact":     ["contact", "phone", "email", "number", "reach", "call", "mail", "website", "helpline"],
+    "semester":    ["semester", "syllabus", "curriculum", "sem"],
+}
+
+SMALL_TALK = {
+    "greeting": [
+        "Namaste! 🙏 I am **CSITmitra**, your assistant for GGU CSIT Dept.\n\nAsk me about: courses · faculty · fees · admission · placement · research",
+        "Hello! I am **CSITmitra**, your GGU CSIT assistant.\n\nWhat would you like to know?",
+    ],
+    "farewell": [
+        "Goodbye! Best of luck with your studies! 🎓 — GGU CSIT Dept.",
+        "See you! Feel free to return anytime. 😊",
+    ],
+    "thanks": [
+        "You're welcome! Any other questions about CSIT at GGU?",
+        "Happy to help! Anything else you'd like to know?",
+    ],
+    "unknown": [
+        "I'm not sure about that. Try asking about:\n\ncourses · fees · faculty · admission · placement · scholarship · research",
+        "Could you rephrase? For example:\n• 'Tell me about MCA'\n• 'Who is Dr. Shrivas?'\n• 'What are the fees?'",
+    ],
+}
+
+HELP_TEXT = textwrap.dedent("""\
+    🤖 **GGU CSITmitra — Help**
+
+    **Topics you can ask about:**
+    • Courses & Programmes (BCA, MCA, M.Sc., B.Sc., Ph.D.)
+    • Fee Structure & Hostel Fees
+    • Faculty Profiles
+    • Admission Process (CUET, SAMARTH Portal)
+    • Placements & Recruiters
+    • Scholarships & Financial Aid
+    • Research & Publications
+    • Exam Pattern & CGPA Grading
+    • Campus Facilities
+    • Contact & Location
+
+    **Example queries:**
+    • "Tell me about MCA"
+    • "What are the fees for BCA?"
+    • "Who is Dr. Shrivas?"
+    • "MCA vs B.Sc. comparison"
+    • "Ph.D. admission process"
+    • "MCA syllabus"
+    • "Placement highlights"
+    • "Hostel fees"
+
+    **Tips:**
+    • Context is remembered per session — ask about MCA, then just type 'fees?' or 'syllabus'
+    • Use a professor's last name: 'Tell me about Majhi'
+    • Compare two programmes: 'MCA vs Ph.D'
+""")
+
+# ── NLP helpers ───────────────────────────────────────────────────────────────
+
+def preprocess(text: str) -> list:
+    text_lower = text.lower()
+    if _USE_NLTK:
+        tokens = word_tokenize(text_lower)
+        tokens = [t for t in tokens if t not in string.punctuation]
+        return [_lemmatizer.lemmatize(t) for t in tokens]
+    return [t.strip(string.punctuation) for t in text_lower.split() if t.strip(string.punctuation)]
+
+
+ALL_KEYWORDS = {kw: intent for intent, kws in INTENTS.items() for kw in kws}
+
+
+def fuzzy_match(token: str, cutoff: float = 0.82):
+    matches = difflib.get_close_matches(token, ALL_KEYWORDS.keys(), n=1, cutoff=cutoff)
+    return ALL_KEYWORDS[matches[0]] if matches else None
+
+
+def detect_intent(tokens: list) -> tuple:
+    scores = {intent: 0 for intent in INTENTS}
+    matched_professor = None
+
+    for token in tokens:
+        for intent, keywords in INTENTS.items():
+            if token in keywords:
+                scores[intent] += 2
+                if intent == "professor":
+                    matched_professor = token
+        fuzzy = fuzzy_match(token)
+        if fuzzy:
+            scores[fuzzy] += 1
+
+    lower = " ".join(tokens)
+    matched_course = None
+    if "mca" in lower:
+        matched_course = "MCA (Master of Computer Applications)"
+    elif "bca" in lower:
+        matched_course = "BCA (Bachelor of Computer Applications)"
+    elif "bsc" in lower or "b.sc" in lower:
+        matched_course = "B.Sc. (Computer Science)"
+    elif "msc" in lower or "m.sc" in lower:
+        matched_course = "M.Sc. (Computer Science)"
+    elif "phd" in lower or "ph.d" in lower or "doctoral" in lower:
+        matched_course = "Ph.D. (Computer Science / IT)"
+
+    _course_boost = {
+        "MCA (Master of Computer Applications)":   "mca",
+        "BCA (Bachelor of Computer Applications)": "bca",
+        "B.Sc. (Computer Science)":                "bsc_cs",
+        "M.Sc. (Computer Science)":                "msc_cs",
+        "Ph.D. (Computer Science / IT)":           "phd",
+    }
+    if matched_course and matched_course in _course_boost:
+        scores[_course_boost[matched_course]] += 5
+
+    syllabus_words = {"syllabus", "semester", "sem", "curriculum"}
+    want_syllabus = bool(syllabus_words & set(tokens)) and matched_course is not None
+
+    compare_words = {"vs", "versus", "compare", "comparison", "difference", "between"}
+    if bool(compare_words & set(tokens)):
+        scores["compare"] += 6
+
+    name_tokens = [t for t in tokens if t in INTENTS["professor"]]
+    if name_tokens:
+        matched_professor = " ".join(name_tokens)
+        scores["professor"] += 6
+
+    best = max(scores, key=scores.get)
+    sub = (matched_course + ":syllabus") if want_syllabus else (matched_professor or matched_course)
+    return (best if scores[best] > 0 else "unknown", sub)
+
+
+def _spell_hint(user_input: str) -> str:
+    tokens = preprocess(user_input)
+    suggestions = set()
+    for tok in tokens:
+        if len(tok) < 3:
+            continue
+        close = difflib.get_close_matches(tok, ALL_KEYWORDS.keys(), n=2, cutoff=0.75)
+        for c in close:
+            if c != tok:
+                suggestions.add(c)
+    if suggestions:
+        return "💡 Did you mean: " + " / ".join(sorted(suggestions)[:3]) + "?"
+    return ""
+
+# ── Course comparison ─────────────────────────────────────────────────────────
+
+_COMPARE_KEYS = ("duration", "intake", "eligibility", "fee_per_semester", "total_approx_fee", "fellowship")
+_COMPARE_LABELS = {
+    "duration":         "Duration",
+    "intake":           "Intake",
+    "eligibility":      "Eligibility",
+    "fee_per_semester": "Fee / Semester",
+    "total_approx_fee": "Total Fee",
+    "fellowship":       "Fellowship",
+}
+
+def compare_courses(lower: str):
+    mapping = {
+        "bca":  "BCA (Bachelor of Computer Applications)",
+        "mca":  "MCA (Master of Computer Applications)",
+        "msc":  "M.Sc. (Computer Science)",
+        "bsc":  "B.Sc. (Computer Science)",
+        "phd":  "Ph.D. (Computer Science / IT)",
+    }
+    found = []
+    for kw, full in mapping.items():
+        if kw in lower and full not in found:
+            found.append(full)
+    if len(found) < 2:
+        return None
+
+    courses_data = DATA.get("courses", {})
+    rows = ["⚖️ **Course Comparison**\n"]
+    for key in _COMPARE_KEYS:
+        label = _COMPARE_LABELS[key]
+        row = f"**{label}:**\n"
+        for name in found:
+            val = courses_data.get(name, {}).get(key, "—")
+            row += f"• {name}: {val}\n"
+        rows.append(row)
+    rows.append(f"💡 Ask 'Tell me about {found[0]}' for full details.")
+    return "\n".join(rows)
+
+# ── Response builder ──────────────────────────────────────────────────────────
+
+_COURSE_ONLY_INTENTS = {
+    "fees", "hostel", "admission", "faculty", "professor", "placement", "scholarship",
+    "research", "exam", "location", "contact", "help", "compare",
+    "facilities", "semester", "about", "courses",
+}
+
+COURSE_MAP = {
+    "mca":    "MCA (Master of Computer Applications)",
+    "bca":    "BCA (Bachelor of Computer Applications)",
+    "msc_cs": "M.Sc. (Computer Science)",
+    "bsc_cs": "B.Sc. (Computer Science)",
+    "phd":    "Ph.D. (Computer Science / IT)",
+}
+
+def build_response(intent: str, sub) -> str:
+    ctx = _ctx()
+
+    if intent in SMALL_TALK:
+        return random.choice(SMALL_TALK[intent])
+
+    d = DATA
+    if not d:
+        return "⚠️ Data file not found. Please ensure ggu_data.json is in the same folder as app.py."
+
+    # ── About ────────────────────────────────────────────────────────────────
+    if intent == "about":
+        _set_ctx(last_intent="about")
+        return (
+            f"🏛️ **{d.get('university', 'Guru Ghasidas Vishwavidyalaya')}**\n"
+            f"{d.get('department', '')}\n\n"
+            f"• **Location**: {d.get('location', '')}\n"
+            f"• **Founded**: {d.get('established', '')}\n"
+            f"• **NAAC**: {d.get('naac', '')}\n"
+            f"• **Campus**: {d.get('campus_size', '')}\n"
+            f"• **Website**: {d.get('website', '')}\n\n"
+            "The CSIT Department started in 1990 with PGDCA, then added M.Sc. CS & IT (1996), "
+            "MCA (1998, AICTE approved), B.Sc. CS, BCA, and Ph.D. programmes. "
+            "Faculty actively collaborate with institutions across India and abroad."
+        )
+
+    # ── All courses ──────────────────────────────────────────────────────────
+    if intent == "courses":
+        _set_ctx(last_intent="courses")
+        lines = ["🎓 **Programmes offered by CSIT Dept., GGV:**\n"]
+        for prog, info in d.get("courses", {}).items():
+            lines.append(
+                f"**{prog}**\n"
+                f"Duration: {info['duration']} | Seats: {info.get('intake', 'N/A')}\n"
+                f"Fee/sem: {info.get('fee_per_semester', 'N/A')}\n"
+            )
+        lines.append("💡 Ask 'Tell me about MCA' or 'MCA syllabus' for full details.")
+        return "\n".join(lines)
+
+    # ── Specific course detail ───────────────────────────────────────────────
+    want_syllabus_only = isinstance(sub, str) and sub.endswith(":syllabus")
+    if want_syllabus_only:
+        sub = sub.replace(":syllabus", "")
+
+    course_key = COURSE_MAP.get(intent) or (sub if sub and sub in d.get("courses", {}) else None)
+    if not course_key and ctx.get("last_course") and intent not in _COURSE_ONLY_INTENTS:
+        course_key = ctx["last_course"]
+    if want_syllabus_only and not course_key and ctx.get("last_course"):
+        course_key = ctx["last_course"]
+
+    if course_key and course_key in d.get("courses", {}):
+        _set_ctx(last_course=course_key, last_intent="course_detail")
+        c = d["courses"][course_key]
+
+        if want_syllabus_only:
+            if "semesters" in c:
+                lines = [f"📋 **Semester-wise Subjects — {course_key}:**\n"]
+                for sem, subjects in c["semesters"].items():
+                    lines.append(f"**{sem}:**")
+                    for subj in subjects:
+                        lines.append(f"• {subj}")
+                    lines.append("")
+                return "\n".join(lines)
+            return f"Semester details not available for {course_key}."
+
+        lines = [f"📘 **{course_key}**\n"]
+        lines.append(f"• **Duration**: {c['duration']}")
+        if "intake" in c:
+            lines.append(f"• **Intake**: {c['intake']}")
+        lines.append(f"• **Eligibility**: {c['eligibility']}")
+        if "exit_option" in c:
+            lines.append(f"• **Exit Option**: {c['exit_option']}")
+        lines.append(f"• **Fee/Semester**: {c.get('fee_per_semester', 'N/A')}")
+        if "total_approx_fee" in c:
+            lines.append(f"• **Total Fee**: {c['total_approx_fee']}")
+        if "fellowship" in c:
+            lines.append(f"• **Fellowship**: {c['fellowship']}")
+        if "research_areas" in c:
+            lines.append(f"• **Research Areas**: {', '.join(c['research_areas'])}")
+        if "semesters" in c:
+            lines.append("\n📋 **Semester-wise Subjects:**")
+            for sem, subjects in c["semesters"].items():
+                lines.append(f"\n**{sem}:**")
+                for subj in subjects:
+                    lines.append(f"• {subj}")
+        return "\n".join(lines)
+
+    # ── Semester / syllabus ──────────────────────────────────────────────────
+    if intent == "semester":
+        lc = ctx.get("last_course")
+        if lc and lc in d.get("courses", {}):
+            c = d["courses"][lc]
+            if "semesters" in c:
+                lines = [f"📋 **Semester-wise Subjects — {lc}:**\n"]
+                for sem, subjects in c["semesters"].items():
+                    lines.append(f"**{sem}:**")
+                    for subj in subjects:
+                        lines.append(f"• {subj}")
+                    lines.append("")
+                return "\n".join(lines)
+        return "Please specify a course first. Example: 'MCA syllabus' or 'BCA semesters'"
+
+    # ── Fees ─────────────────────────────────────────────────────────────────
+    if intent == "fees":
+        _set_ctx(last_intent="fees")
+        fee = d.get("fees", {})
+        ctx_course = ctx.get("last_course")
+        if ctx_course and ctx_course in d.get("courses", {}):
+            c = d["courses"][ctx_course]
+            lines = [f"💰 **Fees — {ctx_course}:**\n"]
+            lines.append(f"• **Per Semester**: {c.get('fee_per_semester', 'N/A')}")
+            lines.append(f"• **Total**: {c.get('total_approx_fee', 'N/A')}")
+            if "fellowship" in c:
+                lines.append(f"• **Fellowship**: {c['fellowship']}")
+            h = fee.get("hostel", {})
+            lines.append(f"\n🏠 **Hostel**: Boys — {h.get('boys', 'N/A')} | Girls — {h.get('girls', 'N/A')}")
+            lines.append(f"\n⚠️ {fee.get('note', '')}")
+            return "\n".join(lines)
+        lines = ["💰 **Fee Structure — CSIT Dept., GGV:**\n"]
+        for prog, info in d.get("courses", {}).items():
+            lines.append(f"**{prog}**\n• Per Semester: {info.get('fee_per_semester', 'N/A')}\n• Total: {info.get('total_approx_fee', 'N/A')}\n")
+        h = fee.get("hostel", {})
+        lines.append(f"🏠 **Hostel:**\n• Boys: {h.get('boys', 'N/A')}\n• Girls: {h.get('girls', 'N/A')}\n• Note: {h.get('note', '')}")
+        if "other_charges" in fee:
+            lines.append("\n📋 **Other Charges:**")
+            for charge, detail in fee["other_charges"].items():
+                lines.append(f"• {charge.replace('_', ' ').title()}: {detail}")
+        if "scholarships_that_cover_fees" in fee:
+            lines.append("\n🎓 **Scholarships that Cover Fees:**")
+            for s in fee["scholarships_that_cover_fees"]:
+                lines.append(f"• {s}")
+        lines.append(f"\n⚠️ {fee.get('note', '')}")
+        return "\n".join(lines)
+
+    # ── Hostel ───────────────────────────────────────────────────────────────
+    if intent == "hostel":
+        fee = d.get("fees", {})
+        h = fee.get("hostel", {})
+        return (
+            "🏠 **Hostel Information — GGV:**\n\n"
+            f"• **Boys Hostel**: {h.get('boys', 'N/A')}\n"
+            f"• **Girls Hostel**: {h.get('girls', 'N/A')}\n"
+            f"• **Note**: {h.get('note', '')}\n\n"
+            "**Facilities include:** Wi-Fi, common room, reading room, mess (hygienic food), 24/7 security.\n\n"
+            "📌 Apply separately via SAMARTH Portal at www.ggu.ac.in"
+        )
+
+    # ── Admission ────────────────────────────────────────────────────────────
+    if intent == "admission":
+        _set_ctx(last_intent="admission")
+        adm = d.get("admission_process", {})
+        _adm_key_map = {
+            "BCA (Bachelor of Computer Applications)": "BCA",
+            "B.Sc. (Computer Science)":               "B.Sc. CS",
+            "M.Sc. (Computer Science)":               "M.Sc. CS",
+            "MCA (Master of Computer Applications)":  "MCA",
+            "Ph.D. (Computer Science / IT)":          "Ph.D.",
+        }
+        def _resolve(name):
+            mapped = _adm_key_map.get(name, name)
+            return mapped if mapped in adm else None
+        ctx_course = (_resolve(sub) if sub else None) or _resolve(ctx.get("last_course", ""))
+        if ctx_course:
+            return (
+                f"📝 **Admission — {ctx_course}:**\n\n"
+                f"{adm[ctx_course]}\n\n"
+                "📌 Apply online at: **www.ggu.ac.in** (SAMARTH Portal)"
+            )
+        lines = ["📝 **Admission Process — CSIT Dept., GGV:**\n"]
+        for prog, info in adm.items():
+            lines.append(f"**{prog}:**\n{info}\n")
+        lines.append("📌 Apply online at: **www.ggu.ac.in** (SAMARTH Portal)")
+        return "\n".join(lines)
+
+    # ── Faculty list ─────────────────────────────────────────────────────────
+    if intent == "faculty":
+        _set_ctx(last_intent="faculty")
+        lines = ["👨‍🏫 **Teaching Faculty — CSIT Dept., GGV:**\n"]
+        for f in d.get("faculty", []):
+            lines.append(f"• **{f['name']}** | {f['designation']}\n  _{f['specialization']}_\n")
+        lines.append("💡 Ask 'Tell me about Dr. Babita Majhi' for a full profile.")
+        return "\n".join(lines)
+
+    # ── Specific professor ────────────────────────────────────────────────────
+    if intent == "professor" or (sub and isinstance(sub, str) and any(
+        sub.lower() in f["name"].lower() for f in d.get("faculty", [])
+    )):
+        query = (sub or "").lower()
+        matched_f = next((f for f in d.get("faculty", []) if query in f["name"].lower()), None)
+        if not matched_f and ctx.get("last_faculty"):
+            matched_f = next((f for f in d.get("faculty", []) if ctx["last_faculty"].lower() in f["name"].lower()), None)
+        if matched_f:
+            _set_ctx(last_faculty=matched_f["name"])
+            f = matched_f
+            lines = [f"👤 **{f['name']}**\n"]
+            lines.append(f"• **Designation**: {f['designation']}")
+            lines.append(f"• **Qualification**: {f['qualification']}")
+            lines.append(f"• **Specialization**: {f['specialization']}")
+            lines.append(f"• **Subjects Taught**: {', '.join(f['subjects_taught'])}")
+            lines.append(f"• **Email**: {f['email']}")
+            if f.get("phone") and "N/A" not in f["phone"]:
+                lines.append(f"• **Phone**: {f['phone']}")
+            if f.get("notable"):
+                lines.append(f"• **Notable**: {f['notable']}")
+            if f.get("google_scholar"):
+                lines.append(f"• **Google Scholar**: {f['google_scholar']}")
+            if f.get("orcid"):
+                lines.append(f"• **ORCID**: {f['orcid']}")
+            if f.get("joined"):
+                lines.append(f"• **Joined GGV**: {f['joined']}")
+            return "\n".join(lines)
+        return (
+            "I couldn't find that professor. Try using their last name.\n"
+            "Example: 'Tell me about Majhi' or 'Who is Dr. Shrivas?'\n"
+            "Type 'faculty' to see the full list."
+        )
+
+    # ── Facilities ───────────────────────────────────────────────────────────
+    if intent == "facilities":
+        lines = ["🏫 **Campus & Departmental Facilities:**\n"]
+        for item in d.get("facilities", []):
+            lines.append(f"• {item}")
+        return "\n".join(lines)
+
+    # ── Placement ────────────────────────────────────────────────────────────
+    if intent == "placement":
+        p = d.get("placement", {})
+        return (
+            "💼 **Placement Highlights — GGV CSIT:**\n\n"
+            f"• **UG 4-yr Median Package**: {p.get('ug_4yr_median', 'N/A')}\n"
+            f"• **PG 2-yr Median Package**: {p.get('pg_2yr_median', 'N/A')}\n"
+            f"• **Highest Package**: {p.get('highest', 'N/A')}\n"
+            f"• **UG Students Placed**: {p.get('students_placed_ug', 'N/A')}\n"
+            f"• **PG Students Placed**: {p.get('students_placed_pg', 'N/A')}\n"
+            f"• **Placement Rate**: {p.get('placement_rate', 'N/A')}\n"
+            f"• **Top Recruiters**: {', '.join(p.get('top_recruiters', []))}\n\n"
+            f"📌 {p.get('placement_cell', '')}\n"
+            f"{p.get('note', '')}"
+        )
+
+    # ── Scholarship ──────────────────────────────────────────────────────────
+    if intent == "scholarship":
+        lines = ["🏅 **Scholarships & Financial Aid:**\n"]
+        for item in d.get("scholarship", []):
+            lines.append(f"• {item}")
+        lines.append("\n📌 Apply via: scholarships.gov.in or through SAMARTH Portal at www.ggu.ac.in")
+        return "\n".join(lines)
+
+    # ── Research ─────────────────────────────────────────────────────────────
+    if intent == "research":
+        r = d.get("research", {})
+        lines = [f"🔬 **Research @ CSIT, GGV:**\n\n{r.get('summary', '')}\n"]
+        lines.append(f"**Research Areas:** {', '.join(r.get('areas', []))}\n")
+        lines.append("**Recent Highlights:**")
+        for h in r.get("recent_highlights", []):
+            lines.append(f"• {h}")
+        return "\n".join(lines)
+
+    # ── Exam ─────────────────────────────────────────────────────────────────
+    if intent == "exam":
+        return f"📋 **Examination Pattern:**\n\n{d.get('exam_pattern', 'N/A')}"
+
+    # ── Location ─────────────────────────────────────────────────────────────
+    if intent == "location":
+        return (
+            f"📍 **{d.get('university', '')}**\n"
+            f"{d.get('department', '')}\n"
+            f"{d.get('location', '')}\n\n"
+            "• Located at Koni, approx. 5 km from Bilaspur city\n"
+            "• River Arpa runs parallel to the campus\n"
+            "• University buses connect Bilaspur city to Koni campus"
+        )
+
+    # ── Contact ──────────────────────────────────────────────────────────────
+    if intent == "contact":
+        return (
+            "📞 **Contact — GGV CSIT Dept.:**\n\n"
+            f"• **Phone**: {d.get('phone', 'N/A')}\n"
+            f"• **Email**: {d.get('email', 'N/A')}\n"
+            f"• **Website**: {d.get('website', 'N/A')}"
+        )
+
+    # ── Help ─────────────────────────────────────────────────────────────────
+    if intent == "help":
+        return HELP_TEXT
+
+    # ── Compare ──────────────────────────────────────────────────────────────
+    if intent == "compare":
+        hint_lower = (sub or "").lower()
+        result = compare_courses(hint_lower)
+        if result:
+            return result
+        lc = ctx.get("last_course", "")
+        if lc:
+            result = compare_courses(hint_lower + " " + lc.lower()[:3])
+            if result:
+                return result
+        return (
+            "⚖️ To compare courses, mention two programme names.\n\n"
+            "Examples:\n• 'MCA vs M.Sc'\n• 'Compare BCA and MCA'\n• 'Ph.D vs MCA difference'"
+        )
+
+    return random.choice(SMALL_TALK["unknown"])
+
+
+# ── Main chat function ────────────────────────────────────────────────────────
+
+def get_response(user_message: str) -> str:
+    msg = user_message.strip()
+    low = msg.lower()
+
+    # Feedback shortcuts
+    if any(kw in low for kw in ("good bot", "great", "awesome", "perfect", "well done", "nice work")):
+        return "😊 Thank you for the kind words! Anything else I can help with?"
+    if any(kw in low for kw in ("wrong", "incorrect", "not helpful", "useless")):
+        return "😔 Sorry about that! Please rephrase your question or type 'help' to see example queries."
+
+    # Compare shortcut (catches "MCA vs BCA" before full NLP)
+    if any(kw in low for kw in ("vs", "versus", "compare", "difference between")):
+        result = compare_courses(low)
+        if result:
+            _log(msg, "compare", result)
+            return result
+
+    tokens = preprocess(msg)
+    intent, sub = detect_intent(tokens)
+    response = build_response(intent, sub)
+
+    if intent == "unknown":
+        hint = _spell_hint(msg)
+        if hint:
+            response = response + "\n\n" + hint
+
+    _log(msg, intent, response)
+    return response
+
+
+# ── Flask routes ──────────────────────────────────────────────────────────────
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+
+        user_message = data.get("message", "").strip()
+        if not user_message:
+            return jsonify({
+                "response": "Please enter a message!",
+                "timestamp": datetime.datetime.now().strftime("%I:%M %p"),
+            })
+
+        bot_response = get_response(user_message)
+        return jsonify({
+            "response": bot_response,
+            "timestamp": datetime.datetime.now().strftime("%I:%M %p"),
+        })
+
+    except Exception as e:
+        app.logger.error(f"Chat error: {e}")
+        return jsonify({
+            "response": "Sorry, something went wrong. Please try again!",
+            "timestamp": datetime.datetime.now().strftime("%I:%M %p"),
+        }), 500
+
+
+@app.route("/history", methods=["GET"])
+def history():
+    return jsonify({"history": _history()})
+
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    session.clear()
+    return jsonify({"status": "Session reset successfully."})
+
+
+@app.route("/logs", methods=["GET"])
+def list_logs():
+    """Admin page — lists all saved log files with download links."""
+    try:
+        files = sorted(
+            [f for f in os.listdir(LOGS_DIR) if f.endswith(".txt")],
+            reverse=True
+        )
+        rows = ""
+        for fname in files:
+            fpath = os.path.join(LOGS_DIR, fname)
+            size_kb = os.path.getsize(fpath) / 1024
+            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M:%S")
+            rows += (
+                f"<tr>"
+                f"<td>{fname}</td>"
+                f"<td>{mtime}</td>"
+                f"<td>{size_kb:.1f} KB</td>"
+                f"<td><a href='/logs/view/{fname}'>View</a> &nbsp; "
+                f"<a href='/logs/download/{fname}'>Download</a></td>"
+                f"</tr>\n"
+            )
+        html = f"""<!DOCTYPE html>
+<html><head><title>CSITmitra — Chat Logs</title>
+<style>
+  body {{ font-family: monospace; padding: 2rem; background:#1a1a2e; color:#eee; }}
+  h1 {{ color:#00d4ff; }} table {{ border-collapse:collapse; width:100%; }}
+  th,td {{ padding:.5rem 1rem; border:1px solid #444; text-align:left; }}
+  th {{ background:#0f3460; }} a {{ color:#00d4ff; }}
+  .empty {{ color:#888; margin-top:2rem; }}
+</style></head><body>
+<h1>📋 CSITmitra — Chat Logs</h1>
+<p>{len(files)} log file(s) saved in <code>logs/</code></p>
+{"<table><tr><th>File</th><th>Last Modified</th><th>Size</th><th>Actions</th></tr>" + rows + "</table>" if files else "<p class='empty'>No logs yet. Chats will appear here.</p>"}
+</body></html>"""
+        return html
+    except Exception as e:
+        return f"Error listing logs: {e}", 500
+
+
+@app.route("/logs/view/<path:filename>", methods=["GET"])
+def view_log(filename):
+    """View a log file in the browser."""
+    if ".." in filename or "/" in filename:
+        return "Invalid filename", 400
+    fpath = os.path.join(LOGS_DIR, filename)
+    if not os.path.exists(fpath):
+        return "Log file not found", 404
+    with open(fpath, "r", encoding="utf-8") as f:
+        content = f.read()
+    html = f"""<!DOCTYPE html>
+<html><head><title>{filename}</title>
+<style>
+  body {{ font-family: monospace; padding: 2rem; background:#1a1a2e; color:#eee; }}
+  pre {{ white-space:pre-wrap; word-break:break-word; background:#0f3460; padding:1rem; border-radius:8px; }}
+  a {{ color:#00d4ff; }}
+</style></head><body>
+<a href="/logs">← Back to logs</a> &nbsp; <a href="/logs/download/{filename}">⬇ Download</a>
+<h2>{filename}</h2>
+<pre>{content}</pre>
+</body></html>"""
+    return html
+
+
+@app.route("/logs/download/<path:filename>", methods=["GET"])
+def download_log(filename):
+    """Download a log file as a .txt attachment."""
+    from flask import send_from_directory
+    if ".." in filename or "/" in filename:
+        return "Invalid filename", 400
+    return send_from_directory(LOGS_DIR, filename, as_attachment=True)
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    log_count = len([f for f in os.listdir(LOGS_DIR) if f.endswith(".txt")]) if os.path.exists(LOGS_DIR) else 0
+    return jsonify({
+        "status": "ok",
+        "nltk": _USE_NLTK,
+        "data_loaded": bool(DATA),
+        "courses": len(DATA.get("courses", {})),
+        "faculty": len(DATA.get("faculty", [])),
+        "logs_saved": log_count,
+        "logs_dir": LOGS_DIR,
+    })
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_ENV", "production") != "production"
+    app.run(host="0.0.0.0", port=port, debug=debug)
