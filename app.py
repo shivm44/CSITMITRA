@@ -205,7 +205,7 @@ INTENTS = {
     "greeting":    ["hi", "hello", "hey", "howdy", "greet", "morning", "afternoon", "evening", "namaste", "start"],
     "farewell":    ["bye", "goodbye", "exit", "quit", "later", "tata", "cya", "close", "end"],
     "thanks":      ["thanks", "thank", "appreciate", "grateful", "cheers", "helpful"],
-    "about":       ["about", "overview", "history", "established", "founded", "information",
+    "about":       ["about", "overview", "history", "established", "founded",
                     "info", "ggu", "ggv", "university", "vishwavidyalaya", "department", "csit"],
     "courses":     ["course", "program", "programme", "degree", "branch", "stream", "study",
                     "offer", "available", "subject", "list", "all"],
