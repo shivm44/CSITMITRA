@@ -1,11 +1,20 @@
-services:
-  - type: web
-    name: csitmitra
-    env: python
-    buildCommand: pip install -r requirements.txt && python nltk_setup.py
-    startCommand: gunicorn app:app --workers 2 --timeout 60 --bind 0.0.0.0:$PORT
-    envVars:
+# Exported from Render on 2026-04-24T08:11:48Z
+version: "1"
+projects:
+- name: My project
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: CSITMITRA
+      runtime: python
+      repo: https://github.com/shivm44/CSITMITRA
+      plan: free
+      envVars:
       - key: SECRET_KEY
-        generateValue: true
-      - key: FLASK_ENV
-        value: production
+        sync: false
+      region: singapore
+      buildCommand: pip install -r requirements.txt && python nltk_setup.py
+      startCommand: python app.pygunicorn app:app --workers 2 --timeout 60 --bind
+        0.0.0.0:$PORT
+      autoDeployTrigger: commit
