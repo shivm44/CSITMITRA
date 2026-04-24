@@ -486,6 +486,22 @@
             30% { transform: translateY(-10px); opacity: 1; }
         }
 
+        /* Typewriter cursor */
+        .typewriter-cursor {
+            display: inline-block;
+            color: var(--accent);
+            font-weight: bold;
+            animation: cursorBlink 0.7s step-end infinite;
+            margin-left: 1px;
+            vertical-align: baseline;
+            line-height: 1;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             h1 {
@@ -570,13 +586,20 @@
                     <div class="quick-actions">
                         <button class="quick-action-btn" onclick="sendQuickMessage('What are the fees?')">💰 Fees</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('List all courses offered')">📚 All Courses</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about MCA')">🖥️ MCA</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about BCA')">🎒 BCA</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('How to apply for admission?')">🎓 Admission</button>
-                        <button class="quick-action-btn" onclick="sendQuickMessage('Hostel information')">🏠 Hostel</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('hostel')">🏠 Hostel</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Contact details')">📞 Contact</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Show faculty list')">👨‍🏫 Faculty</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Placement highlights')">💼 Placements</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Scholarship information')">🏅 Scholarships</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Research at CSIT')">🔬 Research</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about Ph.D programme')">🎓 Ph.D</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Campus facilities')">🏫 Facilities</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about GGU')">🏛️ About GGU</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('MCA vs BCA comparison')">⚖️ Compare</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Exam pattern')">📋 Exam Pattern</button>
                     </div>
                 </div>
             </div>
@@ -599,7 +622,7 @@
         }
 
         // Add message to chat
-        function addMessage(message, isUser = false) {
+        function addMessage(message, isUser = false, animate = false) {
             if (isFirstMessage && isUser) {
                 chatMessages.innerHTML = '';
                 isFirstMessage = false;
@@ -607,23 +630,69 @@
 
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-            
-            const time = new Date().toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
+
+            const time = new Date().toLocaleTimeString('en-US', {
+                hour: 'numeric',
                 minute: '2-digit',
-                hour12: true 
+                hour12: true
             });
 
+            const bubbleId = 'bubble_' + Date.now();
             messageDiv.innerHTML = `
                 <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
                 <div class="message-content">
-                    <div class="message-bubble">${formatMessage(message)}</div>
+                    <div class="message-bubble" id="${bubbleId}"></div>
                     <div class="message-time">${time}</div>
                 </div>
             `;
 
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const bubble = document.getElementById(bubbleId);
+
+            if (!animate || isUser) {
+                bubble.innerHTML = formatMessage(message);
+                return;
+            }
+
+            // Typewriter: line by line, char by char
+            const lines = message.split('\n');
+            let lineIndex = 0;
+            let charIndex = 0;
+            let currentHTML = '';
+            const cursor = '<span class="typewriter-cursor">▍</span>';
+
+            function typeNextChar() {
+                if (lineIndex >= lines.length) {
+                    bubble.innerHTML = currentHTML;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    return;
+                }
+
+                const line = lines[lineIndex];
+
+                if (charIndex < line.length) {
+                    charIndex++;
+                    const visibleLines = lines.slice(0, lineIndex);
+                    const partialLine = line.slice(0, charIndex);
+                    const allText = [...visibleLines, partialLine].join('\n');
+                    bubble.innerHTML = formatMessage(allText) + cursor;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    const delay = line.length > 80 ? 7 : line.length > 40 ? 13 : 18;
+                    setTimeout(typeNextChar, delay);
+                } else {
+                    lineIndex++;
+                    charIndex = 0;
+                    const allText = lines.slice(0, lineIndex).join('\n');
+                    currentHTML = formatMessage(allText);
+                    bubble.innerHTML = currentHTML + cursor;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    setTimeout(typeNextChar, 55);
+                }
+            }
+
+            typeNextChar();
         }
 
         // Show typing indicator
@@ -681,7 +750,7 @@
                 
                 // Add bot response
                 setTimeout(() => {
-                    addMessage(data.response, false);
+                    addMessage(data.response, false, true);
                 }, 300);
 
             } catch (error) {
