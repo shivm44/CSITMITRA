@@ -81,7 +81,10 @@ def _history() -> list:
 # Every chat turn is appended to a per-session .txt log file on disk.
 # Logs survive server restarts and are readable by humans and scripts.
 
-LOGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+# On Render (and most cloud platforms), the app directory is read-only.
+# Use /tmp for writable runtime logs, or a custom path via env var.
+_default_logs = os.path.join("/tmp", "csitmitra_logs")
+LOGS_DIR = os.environ.get("LOGS_DIR", _default_logs)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 
