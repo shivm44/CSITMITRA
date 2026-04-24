@@ -307,9 +307,16 @@ def preprocess(text: str) -> list:
 ALL_KEYWORDS = {kw: intent for intent, kws in INTENTS.items() for kw in kws}
 
 
-def fuzzy_match(token: str, cutoff: float = 0.82):
+def fuzzy_match(token: str, cutoff: float = 0.75):
     matches = difflib.get_close_matches(token, ALL_KEYWORDS.keys(), n=1, cutoff=cutoff)
     return ALL_KEYWORDS[matches[0]] if matches else None
+
+
+def fuzzy_match_professor_name(token: str) -> str | None:
+    """Return the closest professor keyword for a misspelled name token."""
+    prof_keywords = INTENTS["professor"]
+    matches = difflib.get_close_matches(token, prof_keywords, n=1, cutoff=0.70)
+    return matches[0] if matches else None
 
 
 def detect_intent(tokens: list) -> tuple:
@@ -325,6 +332,11 @@ def detect_intent(tokens: list) -> tuple:
         fuzzy = fuzzy_match(token)
         if fuzzy:
             scores[fuzzy] += 1
+            if fuzzy == "professor" and matched_professor is None:
+                # fuzzy hit on a professor keyword — resolve the actual keyword
+                resolved = fuzzy_match_professor_name(token)
+                if resolved:
+                    matched_professor = resolved
 
     lower = " ".join(tokens)
     matched_course = None
@@ -357,6 +369,12 @@ def detect_intent(tokens: list) -> tuple:
         scores["compare"] += 6
 
     name_tokens = [t for t in tokens if t in INTENTS["professor"]]
+    if not name_tokens:
+        # Fuzzy fallback: catch typos like "srivas" → "shrivas"
+        for t in tokens:
+            resolved = fuzzy_match_professor_name(t)
+            if resolved:
+                name_tokens.append(resolved)
     if name_tokens:
         matched_professor = " ".join(name_tokens)
         scores["professor"] += 6
@@ -766,7 +784,18 @@ def get_response(user_message: str) -> str:
     if intent == "unknown":
         hint = _spell_hint(msg)
         if hint:
-            response = response + "\n\n" + hint
+            response = (
+                "⚠️ I couldn't find what you're looking for. Please check the name or keyword spelling.\n\n"
+                + hint
+                + "\n\nOr type **'help'** to see all available topics and example queries."
+            )
+        else:
+            response = (
+                "⚠️ I didn't understand that. Please check the spelling and try again.\n\n"
+                "Try asking about:\n• courses · fees · faculty · admission · placement · scholarship\n\n"
+                "💡 For faculty: use their **last name** e.g. *'Who is Shrivas?'*\n"
+                "Type **'help'** for all example queries."
+            )
 
     _log(msg, intent, response)
     return response
