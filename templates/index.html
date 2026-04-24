@@ -393,9 +393,22 @@
         /* Quick Actions */
         .quick-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
             flex-wrap: wrap;
+            max-height: 120px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .quick-actions::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        .quick-actions::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
         }
 
         .quick-action-btn {
@@ -556,10 +569,14 @@
                     </div>
                     <div class="quick-actions">
                         <button class="quick-action-btn" onclick="sendQuickMessage('What are the fees?')">💰 Fees</button>
-                        <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about courses')">📚 Courses</button>
-                        <button class="quick-action-btn" onclick="sendQuickMessage('How to apply?')">🎓 Admission</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('List all courses offered')">📚 All Courses</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('How to apply for admission?')">🎓 Admission</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Hostel information')">🏠 Hostel</button>
                         <button class="quick-action-btn" onclick="sendQuickMessage('Contact details')">📞 Contact</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Placement highlights')">💼 Placements</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Scholarship information')">🏅 Scholarships</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Campus facilities')">🏫 Facilities</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Tell me about GGU')">🏛️ About GGU</button>
                     </div>
                 </div>
             </div>
