@@ -257,8 +257,24 @@
       "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver)"
     ],
     "note": "GGV is a Central University. Fees are heavily subsidised compared to private institutions. Exact fees may be revised each session — always verify at www.ggu.ac.in."
-  },
-  "faculty": [
+      },
+      "faculty": [
+        {
+      "name": "Prof. A.K. Saxena",
+      "designation": "Professor",
+      "qualification": "Ph.D. from Jiwaji University, Gwalior",
+      "email": "amitsaxena65@rediffmail.com",
+      "phone": "9425222744",
+      "specialization": "Pattern Recognition, Data Mining, Machine Learning, Image Processing, Neural Networks",
+      "subjects_taught": [
+        "Pattern Recognition",
+        "Data Mining",
+        "Machine Learning",
+        "Soft Computing"
+      ],
+      "notable": "Google Scholar citations: 2,537+. Senior-most faculty; extensively published in IEEE, Springer, and international journals. Collaborated with researchers in Taiwan, Hong Kong, and globally.",
+      "google_scholar": "https://scholar.google.com/citations?user=xkg-4nYAAAAJ"
+    },
     {
       "name": "Dr. Babita Majhi",
       "designation": "Associate Professor",
@@ -296,7 +312,7 @@
       "designation": "Head of Department (HoD) & Professor",
       "qualification": "Ph.D. in Computer Science",
       "email": "csit.ppujari@ggu.ac.in",
-      "phone": "N/A (contact via dept.)",
+      "phone": "8269076954",
       "specialization": "Machine Learning, Deep Learning, Image Processing, Plant Recognition using CNN",
       "subjects_taught": [
         "Machine Learning",
@@ -305,6 +321,28 @@
         "Python Programming"
       ],
       "notable": "Published research on CNN-based plant recognition (VGG16, ResNet101). Work on oil spill classification using Random Forest and XGBoost."
+    },
+    {
+      "name": "Shreemat Kumar Dash",
+      "designation": "Assistant Professor",
+      "qualification": "Not publicly available (profile page inaccessible)",
+      "email": "dash.shreemat786@gmail.com",
+      "phone": "9853674335",
+      "specialization": "Not publicly available",
+      "subjects_taught": [],
+      "notable": "Listed under teaching staff, Dept. of CSIT, GGU Bilaspur.",
+      "google_scholar": "Not found"
+    },
+    {
+      "name": "Dr. Shrabanti Mandal",
+      "designation": "Associate Professor",
+      "qualification": "Ph.D. from NIT Durgapur",
+      "email": "shrabanti.mandal@ggu.ac.in",
+      "phone": "7006435642",
+      "specialization": "Data Mining, Fuzzy Systems",
+      "subjects_taught": [],
+      "notable": "Google Scholar citations: 84+. Earlier affiliated with NIT Durgapur.",
+      "google_scholar": "https://scholar.google.com/citations?user=nc_n7aUAAAAJ"
     },
     {
       "name": "Dr. Rajwant Singh Rao",
@@ -327,14 +365,16 @@
       "qualification": "Ph.D.",
       "email": "ratnesh.csit@ggu.ac.in",
       "phone": "6397843727",
-      "specialization": "Database Systems, Data Mining, Information Retrieval",
+      "specialization": "Machine Learning, Data Science, IoT, Robotics, Image Processing, NLP",
       "subjects_taught": [
-        "Data Science",
-        "Computer Vision",
-        "Block Chain",
-        "Ai and Machine Learning"
+          "Data Science",
+          "Machine Learning",
+          "Advanced Java",
+          "Research Methodology"
       ],
-      "notable": "Active in departmental academic activities and curriculum development."
+      "notable": "Google Scholar citations: 134+", 
+      "personal_website": "ratnesh-srivastava.github.io",
+      "google_scholar": "https://scholar.google.com/citations?user=yxPSo-QAAAAJ"
      },
     {
       "name": "Dr. Amitesh Kumar Jha",
