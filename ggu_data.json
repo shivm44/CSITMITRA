@@ -321,6 +321,20 @@
       ],
       "notable": "Joined CSIT dept. in December 2019."
     },
+     {
+      "name": "Dr. Ratnesh Prasad Srivastava",
+      "designation": "Associate Professor",
+      "qualification": "Ph.D.",
+      "email": "ratnesh.csit@ggu.ac.in",
+      "phone": "6397843727",
+      "specialization": "Database Systems, Data Mining, Information Retrieval",
+      "subjects_taught": [
+        "Data Science",
+        "Computer Vision",
+        "Block Chain",
+        "Ai and Machine Learning"
+      ],
+      "notable": "Active in departmental academic activities and curriculum development."
     {
       "name": "Dr. Amitesh Kumar Jha",
       "designation": "Assistant Professor",
@@ -481,9 +495,7 @@
   },
   "scholarship": [
     "NSP (National Scholarship Portal) — covers full/partial tuition for SC/ST/OBC/EWS students",
-    "Post-Matric Scholarship — Chhattisgarh State Government",
     "Central Sector Scholarship — for meritorious students (top 20% in board exams)",
-    "Merit-based fee waiver by the university for top-performing students",
     "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver) — apply through SAMARTH Portal",
     "Post-Matric Scholarship — State Government of Chhattisgarh",
     "Sudama Scholarship — for economically weaker students in Chhattisgarh",
