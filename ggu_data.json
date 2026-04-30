@@ -325,13 +325,12 @@
     {
       "name": "Shreemat Kumar Dash",
       "designation": "Assistant Professor",
-      "qualification": "Not publicly available (profile page inaccessible)",
+      "qualification": "Ph.D",
       "email": "dash.shreemat786@gmail.com",
       "phone": "9853674335",
-      "specialization": "Not publicly available",
-      "subjects_taught": [],
-      "notable": "Listed under teaching staff, Dept. of CSIT, GGU Bilaspur.",
-      "google_scholar": "Not found"
+      "specialization": "Network Fundamental & Reference Model, Data communication & mobile Computing, Data Structure, Software Engineering, RDBMS and SQL, Operating System, C, C++, Java Programming and OOPs Concept, Machine Learning, Artificial Intelligence and Neural Network",
+      "subjects_taught": ["Artificial Intelligence", "Optimization Techniques", "Machine Learning", "Basics of Programming in C/C++/Python"],
+      "notable": "Listed under teaching staff, Dept. of CSIT, GGU Bilaspur."
     },
     {
       "name": "Dr. Shrabanti Mandal",
@@ -340,7 +339,7 @@
       "email": "shrabanti.mandal@ggu.ac.in",
       "phone": "7006435642",
       "specialization": "Data Mining, Fuzzy Systems",
-      "subjects_taught": [],
+      "subjects_taught": ["JAVA"],
       "notable": "Google Scholar citations: 84+. Earlier affiliated with NIT Durgapur.",
       "google_scholar": "https://scholar.google.com/citations?user=nc_n7aUAAAAJ"
     },
