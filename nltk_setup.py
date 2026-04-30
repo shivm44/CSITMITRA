@@ -1,6 +1,6 @@
 """
 Run this ONCE after deployment to download NLTK data.
-On Render / Railway: add this as a Build Command, or run it in the shell.
+On Render : add this as a Build Command, or run it in the shell.
 
 Usage:
     python nltk_setup.py
