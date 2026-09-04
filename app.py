@@ -161,7 +161,7 @@ INTENTS = {
     "faculty":     ["faculty", "professor", "teacher", "staff", "lecturer", "instructor",
                     "who", "teach"],
     "professor":   ["babita", "santosh", "ratnesh", "shreemat", "shrabanti", "a.k.", "pushplata", "rajwant", "sushma", "akhilesh", "vikas",
-                    "vineet", "prashant", "vivek", "abhishek", "amitesh", "majhi", "pujari", "mandal", "saxena", "Srivastava", "dash", "kumar", "prasad",
+                    "vineet", "prashant", "vivek", "abhishek", "amitesh", "majhi", "pujari", "mandal", "saxena", "Srivastava", "dash", "kumar", "prasad","pp","p.p.","murthy",
                     "jaiswal", "shrivas", "pandey", "awasthi", "vaishnav", "sarthe", "patel", "jha", "rao"],
     "facilities":  ["facility", "facilities", "library", "lab", "wifi", "internet",
                     "sport", "cafeteria", "infrastructure", "amenity", "medical", "bus", "transport", "campus"],
