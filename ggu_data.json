@@ -242,7 +242,8 @@
     "other_charges": {
       "library_fee": "Included in semester fee",
       "sports_fee": "Included in semester fee",
-      "exam_fee": "included in semester fee",
+      "exam_fee": "Included in semester fee",
+      "ATKT_fee": "Fee as per university rules",
       "lab_fee": "Included in semester fee",
       "bus_fee": "Included in semester fee",
       "medical_fee": "Included in semester fee",
