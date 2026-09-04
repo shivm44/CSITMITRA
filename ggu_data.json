@@ -5,7 +5,13 @@
   "established": "1983 (State University); Central University since 2009",
   "naac": "A++ (NAAC Accredited)",
   "website": "www.ggu.ac.in/department/csit",
-  "phone": "07752-260209 (Registrar) | 07752-260283",
+  "phone": [
+    "Registrar: 07752-260209",
+    "University Contact: 07752260148",
+    "Dean of student welfare: 7752260204",
+    "Admission cell: 7752260342",
+    "Exam Section: 7752260000"
+  ],
   "email": "centralggu@ggu.ac.in",
   "campus_size": "665 acres",
   "courses": {
@@ -254,7 +260,7 @@
       "NSP (National Scholarship Portal) — covers full/partial tuition for SC/ST/OBC/EWS",
       "Post-Matric Scholarship — State Government of Chhattisgarh",
       "Central Sector Scholarship — for meritorious students",
-      "Sudama Scholarship — for economically weaker students in Chhattisgarh",
+      "Sudama Scholarship — for economically weaker students (BPL card hoplders) in Chhattisgarh",
       "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver)"
     ],
     "note": "GGV is a Central University. Fees are heavily subsidised compared to private institutions. Exact fees may be revised each session — always verify at www.ggu.ac.in."
@@ -525,7 +531,6 @@
   "placement": {
     "ug_4yr_median": "₹4.50 LPA (NIRF 2025 data)",
     "pg_2yr_median": "₹4.00 LPA (NIRF 2025 data)",
-    "highest": "Up to ₹64 LPA (technical streams)",
     "students_placed_ug": "573 UG students placed (NIRF 2025)",
     "students_placed_pg": "147 PG students placed (NIRF 2025)",
     "placement_rate": "80–90% for technical programmes",
