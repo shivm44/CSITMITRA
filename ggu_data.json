@@ -260,6 +260,16 @@
       },
       "faculty": [
         {
+      "name": "Prof. P.P. Murthy",
+      "designation": "Dean of School 'CSIT & Mathematics",
+      "qualification": "Ph.D. from Jiwaji University, Gwalior",
+      "email_1": "deanschoolofmcs@gmail.com",
+      "email_2": "ppmurthy@gmail.com",
+      "phone": "9424168937",
+      "notable": "Google Scholar citations: 1000+",
+      "google_scholar": "https://scholar.google.com/citations?user=2A9EM0gAAAAJ&hl=en"
+    },
+    {
       "name": "Prof. A.K. Saxena",
       "designation": "Professor",
       "qualification": "Ph.D. from Jiwaji University, Gwalior",
@@ -538,7 +548,7 @@
     "Central Sector Scholarship — for meritorious students (top 20% in board exams)",
     "University Merit-based Fee Waiver — for top-performing students (up to 100% tuition waiver) — apply through SAMARTH Portal",
     "Post-Matric Scholarship — State Government of Chhattisgarh",
-    "Sudama Scholarship — for economically weaker students in Chhattisgarh",
+    "Sudama Scholarship — for economically weaker students (BPL card holders) in Chhattisgarh",
     "JRF/SRF Fellowships for Ph.D. scholars with UGC-NET/GATE qualification"
   ],
   "research": {
