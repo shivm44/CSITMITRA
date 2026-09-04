@@ -394,7 +394,7 @@ def build_response(intent: str, sub) -> str:
             f"• **NAAC**: {d.get('naac', '')}\n"
             f"• **Campus**: {d.get('campus_size', '')}\n"
             f"• **Website**: {d.get('website', '')}\n\n"
-            f"• **About CSIT Department**: {d.get('CSIT', '')}
+            f"• **About CSIT Department**: {d.get('CSIT', '')}"
         )
 
     # ── All courses ──────────────────────────────────────────────────────────
