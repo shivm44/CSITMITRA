@@ -394,9 +394,7 @@ def build_response(intent: str, sub) -> str:
             f"• **NAAC**: {d.get('naac', '')}\n"
             f"• **Campus**: {d.get('campus_size', '')}\n"
             f"• **Website**: {d.get('website', '')}\n\n"
-            "The CSIT Department started in 1990 with PGDCA, then added M.Sc. CS & IT (1996), "
-            "MCA (1998, AICTE approved), B.Sc. CS, BCA, and Ph.D. programmes. "
-            "Faculty actively collaborate with institutions across India and abroad."
+            f"• **About CSIT Department**: {d.get('CSIT', '')}
         )
 
     # ── All courses ──────────────────────────────────────────────────────────
