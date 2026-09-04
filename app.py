@@ -1,13 +1,15 @@
 # ============================================================
-#  GGU CSITmitra — Flask Web Chatbot  (Production-Ready)
+#  GGU CSITmitra — Flask Web Chatbot  (Production-Ready v3.1)
 #  Guru Ghasidas Vishwavidyalaya, Bilaspur
 #  Department of Computer Science & Information Technology
 #
-#  v3.0 — deployment-safe:
+#  v3.1 — FIXED: Robust dictionary key handling for faculty
 #    - Per-user context stored in Flask server-side sessions
 #    - NLTK with graceful fallback (no crash if data missing)
 #    - gunicorn-compatible (no global mutable state per user)
 #    - ggu_data.json driven — update data without code changes
+#    - Safe .get() defaults for all optional faculty fields
+#    - Handles variable email structures (email, email_1/email_2)
 #    - All intents: courses, faculty, fees, admission, placement,
 #      scholarship, research, exam, comparison, syllabus, hostel
 # ============================================================
@@ -550,11 +552,12 @@ def build_response(intent: str, sub) -> str:
         _set_ctx(last_intent="faculty")
         lines = ["👨‍🏫 **Teaching Faculty — CSIT Dept., GGV:**\n"]
         for f in d.get("faculty", []):
-            lines.append(f"• **{f['name']}** | {f['designation']}\n  _{f['specialization']}_\n")
+            lines.append(f"• **{f['name']}** | {f['designation']}\n  _{f.get('specialization', 'Specialization N/A')}_\n")
         lines.append("💡 Ask 'Tell me about Dr. Babita Majhi' for a full profile.")
         return "\n".join(lines)
 
     # ── Specific professor ────────────────────────────────────────────────────
+    # [FIX] Use .get() for ALL optional fields to prevent KeyError
     if intent == "professor" or (sub and isinstance(sub, str) and any(
         sub.lower() in f["name"].lower() for f in d.get("faculty", [])
     )):
@@ -566,21 +569,51 @@ def build_response(intent: str, sub) -> str:
             _set_ctx(last_faculty=matched_f["name"])
             f = matched_f
             lines = [f"👤 **{f['name']}**\n"]
-            lines.append(f"• **Designation**: {f['designation']}")
-            lines.append(f"• **Qualification**: {f['qualification']}")
-            lines.append(f"• **Specialization**: {f['specialization']}")
-            lines.append(f"• **Subjects Taught**: {', '.join(f['subjects_taught'])}")
-            lines.append(f"• **Email**: {f['email']}")
+            lines.append(f"• **Designation**: {f.get('designation', 'N/A')}")
+            lines.append(f"• **Qualification**: {f.get('qualification', 'N/A')}")
+            
+            # [FIX] Handle optional 'specialization' field
+            specialization = f.get('specialization')
+            if specialization:
+                lines.append(f"• **Specialization**: {specialization}")
+            
+            # [FIX] Handle optional 'subjects_taught' field
+            subjects = f.get('subjects_taught')
+            if subjects:
+                lines.append(f"• **Subjects Taught**: {', '.join(subjects)}")
+            
+            # [FIX] Handle multiple email formats: single 'email' OR 'email_1' & 'email_2'
+            if f.get('email'):
+                lines.append(f"• **Email**: {f['email']}")
+            else:
+                email_parts = []
+                if f.get('email_1'):
+                    email_parts.append(f"email_1: {f['email_1']}")
+                if f.get('email_2'):
+                    email_parts.append(f"email_2: {f['email_2']}")
+                if email_parts:
+                    lines.append(f"• **Email**: {' | '.join(email_parts)}")
+            
+            # [FIX] Handle optional 'phone' field (may contain "N/A")
             if f.get("phone") and "N/A" not in f["phone"]:
                 lines.append(f"• **Phone**: {f['phone']}")
+            
+            # [FIX] Handle optional 'notable' field
             if f.get("notable"):
                 lines.append(f"• **Notable**: {f['notable']}")
+            
+            # [FIX] Handle optional 'google_scholar' field
             if f.get("google_scholar"):
                 lines.append(f"• **Google Scholar**: {f['google_scholar']}")
+            
+            # [FIX] Handle optional 'orcid' field
             if f.get("orcid"):
                 lines.append(f"• **ORCID**: {f['orcid']}")
+            
+            # [FIX] Handle optional 'joined' field
             if f.get("joined"):
                 lines.append(f"• **Joined GGV**: {f['joined']}")
+            
             return "\n".join(lines)
         return (
             "I couldn't find that professor. Try using their last name.\n"
